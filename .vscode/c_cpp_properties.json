@@ -1,0 +1,36 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/torobo/catkin_ws/devel/include/**",
+        "/opt/ros/noetic/include/**",
+        "/home/torobo/catkin_ws/src/agri_navigation_ros1/planner/drone_detect/include/**",
+        "/home/torobo/catkin_ws/src/agri_navigation_ros1/planner/plan_manage/include/**",
+        "/home/torobo/catkin_ws/src/agri_navigation_ros1/uav_simulator/mockamap/include/**",
+        "/home/torobo/catkin_ws/src/agri_navigation_ros1/planner/path_searching/include/**",
+        "/home/torobo/catkin_ws/src/agri_navigation_ros1/planner/plan_env/include/**",
+        "/home/torobo/catkin_ws/src/agri_navigation_ros1/Utils/pose_utils/include/**",
+        "/home/torobo/catkin_ws/src/agri_navigation_ros1/Utils/quadrotor_msgs/include/**",
+        "/home/torobo/catkin_ws/src/agri_navigation_ros1/Utils/selected_points_publisher/include/**",
+        "/home/torobo/catkin_ws/src/agri_navigation_ros1/uav_simulator/so3_control/include/**",
+        "/home/torobo/catkin_ws/src/agri_navigation_ros1/uav_simulator/so3_quadrotor_simulator/include/**",
+        "/home/torobo/catkin_ws/src/agri_navigation_ros1/planner/swarm_bridge/include/**",
+        "/home/torobo/catkin_ws/src/torobo_ros/torobo_collision_detector/include/**",
+        "/home/torobo/catkin_ws/src/agri_navigation_ros1/planner/traj_opt/include/**",
+        "/home/torobo/catkin_ws/src/agri_navigation_ros1/planner/traj_utils/include/**",
+        "/home/torobo/catkin_ws/src/agri_navigation_ros1/Utils/uav_utils/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}
