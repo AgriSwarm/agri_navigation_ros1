@@ -2,7 +2,7 @@
     <arg name="map_size_x" value="50.0"/>
     <arg name="map_size_y" value="50.0"/>
     <arg name="map_size_z" value=" 3.0"/>
-    <arg name="odom_topic" value="visual_slam/odom" />
+    <arg name="odom_topic" value="visual_slam/odom"/>
     <!-- swarm topic transmitter bridge-->
     <include file="$(find swarm_bridge)/launch/bridge_udp.launch">
         <arg name="drone_id" value="999"/>

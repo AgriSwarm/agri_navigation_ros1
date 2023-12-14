@@ -1,0 +1,38 @@
+drones:
+  num_drones: 1
+  num_cams: 1
+  control_freq_hz: 240
+  camera_freq_hz: 5
+  visualize_image: false
+  drone_0:
+    initial_position:
+      x: -15.0
+      y: 7.0
+      z: 1.0
+    target_position:
+      x: 0.0
+      y: 0.0
+      z: 1.0
+    target_enabled: false
+
+  drone_1:
+    initial_position:
+      x: -15.0
+      y: 5.0
+      z: 1.0
+    target_position:
+      x: 0.0
+      y: 0.0
+      z: 1.0
+    target_enabled: false
+
+  drone_2:
+    initial_position:
+      x: 0.0
+      y: 0.0
+      z: 1.0
+    target_position:
+      x: 0.0
+      y: 0.0
+      z: 1.0
+    target_enabled: false

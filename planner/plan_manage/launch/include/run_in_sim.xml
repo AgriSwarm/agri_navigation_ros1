@@ -4,9 +4,9 @@
     <arg name="map_size_x"/>
     <arg name="map_size_y"/>
     <arg name="map_size_z"/>
-    <arg name="init_x"/>
-    <arg name="init_y"/>
-    <arg name="init_z"/>
+    <arg name="init_x" default="0.0"/>
+    <arg name="init_y" default="0.0"/>
+    <arg name="init_z" default="0.0"/>
     <arg name="flight_type" default="2"/>
     <arg name="point_num" default="1"/>
     <arg name="target0_x" default="0.0"/>
@@ -47,6 +47,9 @@
         <arg name="fx" value="387.229248046875"/>
         <arg name="fy" value="387.229248046875"/>
         <!-- maximum velocity, acceleration and jerk the drone will reach -->
+        <!-- <arg name="max_vel" value="1.5" />
+        <arg name="max_acc" value="6.0" />
+        <arg name="max_jer" value="20.0" /> -->
         <arg name="max_vel" value="1.5" />
         <arg name="max_acc" value="6.0" />
         <arg name="max_jer" value="20.0" />

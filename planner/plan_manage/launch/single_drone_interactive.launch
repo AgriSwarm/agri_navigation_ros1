@@ -25,6 +25,10 @@
         <param name="pub_rate" value="1.0"/>
         <param name="min_distance" value="0.8"/>
     </node>
+    <node pkg ="map_generator" name ="lidar_sensing" type="lidar_sensing" output="screen">
+        <param name="window_time" value="1"/>
+        <remap from="/map_generator/global_cloud" to="/drone_0_pcl_render_node/cloud"/>
+    </node>
 
     <include file="$(find ego_planner)/launch/include/run_in_sim.xml">
         <arg name="drone_id" value="0"/>

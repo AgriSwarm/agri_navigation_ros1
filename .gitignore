@@ -1,0 +1,4 @@
+.vscode/
+__pycache__/
+results/
+pybullet_simulator.egg-info/
