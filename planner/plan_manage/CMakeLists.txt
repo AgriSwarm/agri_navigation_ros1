@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   geometry_msgs
   quadrotor_msgs
+  mavros_msgs
   plan_env
   path_searching
   traj_opt
@@ -50,7 +51,9 @@ target_link_libraries(ego_planner_node
 #add_dependencies(ego_planner_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 add_executable(traj_server src/traj_server.cpp)
+add_executable(traj_server_mavros src/traj_server_mavros.cpp)
 target_link_libraries(traj_server ${catkin_LIBRARIES})
+target_link_libraries(traj_server_mavros ${catkin_LIBRARIES})
 # add_dependencies(traj_server ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 

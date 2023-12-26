@@ -46,7 +46,7 @@ class CrazyswarmPyBullet:
                 record=False,
                 obstacles=True,
                 vision_attributes=True,
-                user_debug_gui=False
+                user_debug_gui=True
                 )
         obs, _ = self.env.reset()
         # print("obs:", obs) # pos(3),quat(4),rpy(3),vel(3),rpy_rates(3),last_action(4)
