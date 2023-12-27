@@ -58,7 +58,7 @@
         <param name="color/b" value="0.0"/>
         <param name="covariance_scale" value="100.0"/>
         <param name="robot_scale" value="0.35"/>
-        <param name="tf45" value="false"/>
+        <param name="tf45" value="true"/>
         <param name="drone_id" value="$(arg drone_id)"/>
     </node>
     <node pkg="local_sensing_node" type="pcl_render_node" name="drone_$(arg drone_id)_pcl_render_node" output="screen">
@@ -70,9 +70,7 @@
         <param name="map/y_size" value="$(arg map_size_y_)"/>
         <param name="map/z_size" value="$(arg map_size_z_)"/>
         <remap from="~global_map" to="/map_generator/global_cloud"/>
-        <!-- <remap from="~global_map" to="/livox/lidar"/> -->
         <remap from="~odometry" to="/drone_$(arg drone_id)_$(arg odometry_topic)"/>
-        <!-- <remap from="~odometry" to="/cf231/odom"/> -->
         <remap from="~pcl_render_node/cloud" to="/drone_$(arg drone_id)_pcl_render_node/cloud"/>
     </node>
 </launch>

@@ -1,10 +1,14 @@
 <launch>
-    <arg name="map_size_x" value="200.0"/>
-    <arg name="map_size_y" value="200.0"/>
-    <arg name="map_size_z" value=" 3.0"/>
-    <arg name="odom_topic" value="visual_slam/odom" />
+    
+    <!-- Simulator -->
     <arg name="gazebo_gui" default="true"/>
 
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="world_name" value="$(find agri_resources)/worlds/playground.world"/>
+        <arg name="gui" value="$(arg gazebo_gui)"/>
+    </include>
+
+    <!-- Controller -->
     <arg name="fcu_url" default="udp://127.0.0.1:14550@" />
 	<arg name="gcs_url" default="" />
     <arg name="mavros_ns" default="/"/>
@@ -15,40 +19,7 @@
 	<arg name="log_output" default="screen" />
     <arg name="fcu_protocol" default="v2.0" />
 	<arg name="respawn_mavros" default="true"/>
-
-    <include file="$(find swarm_bridge)/launch/bridge_udp.launch">
-        <arg name="drone_id" value="999"/>
-        <arg name="broadcast_ip" value="127.0.0.255"/>
-    </include>
-
-    <node pkg="robot_state_publisher" type="robot_state_publisher"  name="robot_state_publisher">
-      <param name="publish_frequency" type="double" value="30.0" />
-    </node>
-
-    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find ego_planner)/launch/include/pybullet.rviz" required="true" />
-    <!-- <node pkg ="map_generator" name ="lidar_sensing" type="lidar_sensing" output="screen">
-        <param name="window_time" value="1"/>
-        <remap from="/map_generator/global_cloud" to="/drone_0_pcl_render_node/cloud"/>
-    </node> -->
-
-    <include file="$(find gazebo_ros)/launch/empty_world.launch">
-        <arg name="world_name" value="$(find ego_planner)/../../worlds/playground.world"/>
-        <arg name="gui" value="$(arg gazebo_gui)"/>
-    </include>
-
-    <node pkg="visualization_bridge" name="sensor_visualization_node" type="sensor_visualization_node" output="screen">
-        <param name="display_objects" type="bool" value="false"/>
-        <param name="drones_num" type="int" value="1"/>
-    </node>
-    <include file="$(find ego_planner)/launch/include/run_in_mavros.xml">
-        <arg name="drone_id" value="0"/>
-        <arg name="map_size_x" value="$(arg map_size_x)"/>
-        <arg name="map_size_y" value="$(arg map_size_y)"/>
-        <arg name="map_size_z" value="$(arg map_size_z)"/>
-        <arg name="odom_topic" value="$(arg odom_topic)"/>
-        <arg name="flight_type" value="1"/>
-    </include>
-
+    
     <node pkg="mavros" type="mavros_node" name="mavros" required="$(eval not respawn_mavros)" clear_params="true" output="$(arg log_output)" respawn="$(arg respawn_mavros)" ns="$(arg mavros_ns)">
 		<param name="fcu_url" value="$(arg fcu_url)" />
 		<param name="gcs_url" value="$(arg gcs_url)" />
@@ -62,5 +33,37 @@
         <remap from="/mavros/local_position/odom" to="drone_0_visual_slam/odom"/>
         <remap from="/mavros/setpoint_raw/local" to="/drone_0_mavros/pos_cmd"/>
 	</node>
+
+    <!-- Navigation -->
+    <arg name="map_size_x" value="200.0"/>
+    <arg name="map_size_y" value="200.0"/>
+    <arg name="map_size_z" value=" 3.0"/>
+    <arg name="odom_topic" value="visual_slam/odom" />
+
+    <include file="$(find swarm_bridge)/launch/bridge_udp.launch">
+        <arg name="drone_id" value="999"/>
+        <arg name="broadcast_ip" value="127.0.0.255"/>
+    </include>
+    <include file="$(find ego_planner)/launch/include/run_in_mavros.xml">
+        <arg name="drone_id" value="0"/>
+        <arg name="map_size_x" value="$(arg map_size_x)"/>
+        <arg name="map_size_y" value="$(arg map_size_y)"/>
+        <arg name="map_size_z" value="$(arg map_size_z)"/>
+        <arg name="odom_topic" value="$(arg odom_topic)"/>
+        <arg name="flight_type" value="1"/>
+    </include>
+
+    <!-- Visualization -->
+    <arg name="model" default="$(find agri_resources)/urdf/drones/iris_with_realsense.xacro"/>
+    <param name="robot_description" command="$(find xacro)/xacro --inorder $(arg model) use_nominal_extrinsics:=true add_plug:=true" />
+    <node pkg="robot_state_publisher" type="robot_state_publisher"  name="robot_state_publisher">
+      <param name="publish_frequency" type="double" value="30.0" />
+    </node>
+
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find ego_planner)/launch/include/mavros.rviz" required="true" />
+    <node pkg="visualization_bridge" name="sensor_visualization_node" type="sensor_visualization_node" output="screen">
+        <param name="display_objects" type="bool" value="false"/>
+        <param name="drones_num" type="int" value="1"/>
+    </node>
 
 </launch>

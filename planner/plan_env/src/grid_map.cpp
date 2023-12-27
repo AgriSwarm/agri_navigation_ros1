@@ -87,7 +87,7 @@ void GridMap::initMap(ros::NodeHandle &nh)
   md_.proj_points_cnt_ = 0;
   md_.cache_voxel_cnt_ = 0;
 
-  md_.cam2body_ << 0.0, 0.0, 1.0, 0.0,
+  md_.cam2body_ << 0.0, 0.0, 1.0, 0.1,
       -1.0, 0.0, 0.0, 0.0,
       0.0, -1.0, 0.0, 0.0,
       0.0, 0.0, 0.0, 1.0;
