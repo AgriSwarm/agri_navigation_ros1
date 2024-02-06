@@ -26,9 +26,11 @@ void GridMap::initMap(ros::NodeHandle &nh)
 
   node_.param("grid_map/use_depth_filter", mp_.use_depth_filter_, true);
   node_.param("grid_map/depth_filter_tolerance", mp_.depth_filter_tolerance_, -1.0);
+  node_.param("grid_map/depth_filter_maxdist", mp_.depth_filter_maxdist_, -1.0);
   node_.param("grid_map/depth_filter_mindist", mp_.depth_filter_mindist_, 0.1);
   node_.param("grid_map/depth_filter_margin", mp_.depth_filter_margin_, -1);
   node_.param("grid_map/k_depth_scaling_factor", mp_.k_depth_scaling_factor_, -1.0);
+  node_.param("grid_map/est_depth_scaling_factor", mp_.est_depth_scaling_factor_, -1.0);
   node_.param("grid_map/skip_pixel", mp_.skip_pixel_, -1);
 
   node_.param("grid_map/p_hit", mp_.p_hit_, 0.70);
@@ -88,9 +90,9 @@ void GridMap::initMap(ros::NodeHandle &nh)
   md_.cache_voxel_cnt_ = 0;
 
   md_.cam2body_ << 0.0, 0.0, 1.0, 0.1,
-      -1.0, 0.0, 0.0, 0.0,
-      0.0, -1.0, 0.0, 0.0,
-      0.0, 0.0, 0.0, 1.0;
+                  -1.0, 0.0, 0.0, 0.0,
+                  0.0, -1.0, 0.0, 0.0,
+                  0.0, 0.0, 0.0, 1.0;
 
   /* init callback */
   depth_sub_.reset(new message_filters::Subscriber<sensor_msgs::Image>(node_, "grid_map/depth", 50));
@@ -511,7 +513,7 @@ void GridMap::projectDepthImage()
 
       Eigen::Matrix3d last_camera_r_inv;
       last_camera_r_inv = md_.last_camera_r_m_.inverse();
-      const double inv_factor = 1.0 / mp_.k_depth_scaling_factor_;
+      const double inv_factor = mp_.est_depth_scaling_factor_ / mp_.k_depth_scaling_factor_;
 
       for (int v = mp_.depth_filter_margin_; v < rows - mp_.depth_filter_margin_; v += mp_.skip_pixel_)
       {
@@ -520,15 +522,15 @@ void GridMap::projectDepthImage()
         for (int u = mp_.depth_filter_margin_; u < cols - mp_.depth_filter_margin_;
              u += mp_.skip_pixel_)
         {
-
-          depth = (*row_ptr) * inv_factor;
+          depth = mp_.fx_ / ((*row_ptr) * inv_factor);
           row_ptr = row_ptr + mp_.skip_pixel_;
+          // ROS_INFO("u: %d, v: %d, value: %d, depth: %f", u, v, *row_ptr, depth);
 
           // filter depth
           // depth += rand_noise_(eng_);
           // if (depth > 0.01) depth += rand_noise2_(eng_);
 
-          if (depth < mp_.depth_filter_mindist_)
+          if (depth < mp_.depth_filter_mindist_ || depth > mp_.depth_filter_maxdist_)
           {
             continue;
           }

@@ -1,45 +1,10 @@
 <launch>
 
-    <arg name="fcu_url" default="udp://127.0.0.1:14550@" />
-	  <arg name="gcs_url" default="" />
-    <arg name="mavros_ns" default="/"/>
-	  <arg name="tgt_system" default="1" />
-	  <arg name="tgt_component" default="1" />
-    <arg name="pluginlists_yaml" default="$(find mavros)/launch/apm_pluginlists.yaml"/>
-  	<arg name="config_yaml" default="$(find mavros)/launch/apm_config.yaml" />
-	  <arg name="log_output" default="screen" />
-    <arg name="fcu_protocol" default="v2.0" />
-	  <arg name="respawn_mavros" default="true"/>
     <arg name="gazebo_gui" default="true"/>
-    <arg name="model" default="$(find agri_resources)/urdf/sensors/d435/test_d435_camera.urdf.xacro"/>
-    <!-- <arg name="model" default="$(find agri_resources)/urdf/drones/iris_base.xacro"/> -->
-
-    <param name="robot_description" command="$(find xacro)/xacro --inorder $(arg model) use_nominal_extrinsics:=true add_plug:=true" />
-
-    <node pkg="robot_state_publisher" type="robot_state_publisher"  name="robot_state_publisher">
-      <param name="publish_frequency" type="double" value="30.0" />
-    </node>
-
+    
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
-        <arg name="world_name" value="$(find agri_resources)/worlds/empty.world"/>
+        <arg name="world_name" value="$(find agri_resources)/worlds/playgound.world"/>
         <arg name="gui" value="$(arg gazebo_gui)"/>
     </include>
-
-    <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model"
-        args="-z 1.0 -unpause -urdf -model robot -param robot_description" respawn="false" output="screen" />
-
-    <node pkg="mavros" type="mavros_node" name="mavros" required="$(eval not respawn_mavros)" clear_params="true" output="$(arg log_output)" respawn="$(arg respawn_mavros)" ns="$(arg mavros_ns)">
-      <param name="fcu_url" value="$(arg fcu_url)" />
-      <param name="gcs_url" value="$(arg gcs_url)" />
-      <param name="target_system_id" value="$(arg tgt_system)" />
-      <param name="target_component_id" value="$(arg tgt_component)" />
-      <param name="fcu_protocol" value="$(arg fcu_protocol)" />
-
-      <rosparam command="load" file="$(arg pluginlists_yaml)" />
-      <rosparam command="load" file="$(arg config_yaml)" />
-
-          <remap from="/mavros/local_position/odom" to="drone_0_visual_slam/odom"/>
-          <remap from="/mavros/setpoint_raw/local" to="/drone_0_mavros/pos_cmd"/>
-    </node>
 
 </launch>

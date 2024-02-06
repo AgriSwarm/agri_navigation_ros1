@@ -55,9 +55,9 @@ struct MappingParameters
 
   /* depth image projection filtering */
   bool use_depth_filter_;
-  double depth_filter_mindist_, depth_filter_tolerance_;
+  double depth_filter_mindist_, depth_filter_maxdist_, depth_filter_tolerance_;
   int depth_filter_margin_;
-  double k_depth_scaling_factor_;
+  double k_depth_scaling_factor_, est_depth_scaling_factor_;
   int skip_pixel_;
 
   /* raycasting */

@@ -389,15 +389,12 @@ void odom_callback(const nav_msgs::Odometry::ConstPtr &msg)
     // colvec q90 = R_to_quaternion(ypr_to_R(p90));
     // transform90.setRotation(tf::Quaternion(q90(1), q90(2), q90(3), q90(0)));
 
-    // string base_s = _drone_id == -1 ? string("base") : string("base") + std::to_string(_drone_id);
+    string base_s = _drone_id == -1 ? string("base_link") : string("drone_") + std::to_string(_drone_id) + string("/base_link");
     // string laser_s = _drone_id == -1 ? string("laser") : string("laser") + std::to_string(_drone_id);
     // string vision_s = _drone_id == -1 ? string("vision") : string("vision") + std::to_string(_drone_id);
     // string height_s = _drone_id == -1 ? string("height") : string("height") + std::to_string(_drone_id);
 
-    string drone_s = _drone_id == -1 ? string("drone") : string("drone") + std::to_string(_drone_id);
-    string base_s = string("base_link");
-    broadcaster->sendTransform(tf::StampedTransform(transform, msg->header.stamp, string("world"), drone_s));
-    broadcaster->sendTransform(tf::StampedTransform(transform0, msg->header.stamp, drone_s, base_s));
+    broadcaster->sendTransform(tf::StampedTransform(transform, msg->header.stamp, string("world"), base_s));
     // broadcaster->sendTransform(tf::StampedTransform(transform45, msg->header.stamp, base_s, laser_s));
     // broadcaster->sendTransform(tf::StampedTransform(transform45, msg->header.stamp, base_s, vision_s));
     // broadcaster->sendTransform(tf::StampedTransform(transform90, msg->header.stamp, base_s, height_s));

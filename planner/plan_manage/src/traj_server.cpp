@@ -1,16 +1,25 @@
 #include <nav_msgs/Odometry.h>
 #include <traj_utils/PolyTraj.h>
+#include <traj_utils/TrackingPose.h>
 #include <optimizer/poly_traj_utils.hpp>
 #include <quadrotor_msgs/PositionCommand.h>
 #include <std_msgs/Empty.h>
 #include <visualization_msgs/Marker.h>
 #include <ros/ros.h>
+#include <mavros_msgs/PositionTarget.h>
+#include <quadrotor_msgs/FullState.h>
+#include <quadrotor_msgs/Position.h>
 
 using namespace Eigen;
 
 ros::Publisher pos_cmd_pub;
+ros::Publisher setpoint_mavros_pub;
+ros::Publisher cmd_full_state_pub;
+ros::Publisher cmd_position_pub;
 
-quadrotor_msgs::PositionCommand cmd;
+quadrotor_msgs::PositionCommand legacy_cmd;
+mavros_msgs::PositionTarget mavros_cmd;
+quadrotor_msgs::FullState full_state_cmd;
 // double pos_gain[3] = {0, 0, 0};
 // double vel_gain[3] = {0, 0, 0};
 
@@ -18,9 +27,11 @@ quadrotor_msgs::PositionCommand cmd;
 #define TURN_YAW_TO_CENTER_AT_END 0
 
 bool receive_traj_ = false;
+bool activated_ = false;
 boost::shared_ptr<poly_traj::Trajectory> traj_;
 double traj_duration_;
 ros::Time start_time_;
+ros::Time last_cmd_time_;
 int traj_id_;
 ros::Time heartbeat_time_(0);
 Eigen::Vector3d last_pos_;
@@ -70,6 +81,7 @@ void polyTrajCallback(traj_utils::PolyTrajPtr msg)
   traj_id_ = msg->traj_id;
 
   receive_traj_ = true;
+  activated_ = true;
 }
 
 std::pair<double, double> calculate_yaw(double t_cur, Eigen::Vector3d &pos, double dt)
@@ -133,32 +145,134 @@ std::pair<double, double> calculate_yaw(double t_cur, Eigen::Vector3d &pos, doub
   return yaw_yawdot;
 }
 
+void publish_cf_cmd(
+  Vector3d &p, 
+  Vector3d &v, 
+  Vector3d &a, 
+  Vector3d &j, 
+  double y, 
+  double yd, 
+  std_msgs::Header &header)
+{
+  full_state_cmd.header = header;
+  full_state_cmd.pose.position.x = p(0);
+  full_state_cmd.pose.position.y = p(1);
+  full_state_cmd.pose.position.z = p(2);
+  Quaterniond q(Eigen::AngleAxisd(y, Vector3d::UnitZ()));
+  full_state_cmd.pose.orientation.w = q.w();
+  full_state_cmd.pose.orientation.x = q.x();
+  full_state_cmd.pose.orientation.y = q.y();
+  full_state_cmd.pose.orientation.z = q.z();
+  full_state_cmd.twist.linear.x = v(0);
+  full_state_cmd.twist.linear.y = v(1);
+  full_state_cmd.twist.linear.z = v(2);
+  // full_state_cmd.twist.angular.z = yd;
+  full_state_cmd.acc.x = a(0);
+  full_state_cmd.acc.y = a(1);
+  full_state_cmd.acc.z = a(2);
+  cmd_full_state_pub.publish(full_state_cmd);
+}
+
+void publish_mavros_cmd(
+  Vector3d &p, 
+  Vector3d &v, 
+  Vector3d &a, 
+  Vector3d &j, 
+  double y, 
+  double yd, 
+  std_msgs::Header &header)
+{
+  mavros_cmd.header = header;
+  mavros_cmd.coordinate_frame = mavros_msgs::PositionTarget::FRAME_LOCAL_NED;
+  mavros_cmd.type_mask = mavros_msgs::PositionTarget::IGNORE_YAW_RATE;
+  mavros_cmd.position.x = p(0);
+  mavros_cmd.position.y = p(1);
+  mavros_cmd.position.z = p(2);
+  mavros_cmd.velocity.x = v(0);
+  mavros_cmd.velocity.y = v(1);
+  mavros_cmd.velocity.z = v(2);
+  mavros_cmd.acceleration_or_force.x = a(0);
+  mavros_cmd.acceleration_or_force.y = a(1);
+  mavros_cmd.acceleration_or_force.z = a(2);
+  mavros_cmd.yaw = y;
+  mavros_cmd.yaw_rate = yd;
+  setpoint_mavros_pub.publish(mavros_cmd);
+}
+
+void publish_legacy_cmd(
+  Vector3d &p, 
+  Vector3d &v, 
+  Vector3d &a, 
+  Vector3d &j, 
+  double y, 
+  double yd, 
+  std_msgs::Header &header)
+{
+  legacy_cmd.header = header;
+  legacy_cmd.trajectory_flag = quadrotor_msgs::PositionCommand::TRAJECTORY_STATUS_READY;
+  legacy_cmd.trajectory_id = traj_id_;
+  legacy_cmd.position.x = p(0);
+  legacy_cmd.position.y = p(1);
+  legacy_cmd.position.z = p(2);
+  legacy_cmd.velocity.x = v(0);
+  legacy_cmd.velocity.y = v(1);
+  legacy_cmd.velocity.z = v(2);
+  legacy_cmd.acceleration.x = a(0);
+  legacy_cmd.acceleration.y = a(1);
+  legacy_cmd.acceleration.z = a(2);
+  legacy_cmd.jerk.x = j(0);
+  legacy_cmd.jerk.y = j(1);
+  legacy_cmd.jerk.z = j(2);
+  legacy_cmd.yaw = y;
+  legacy_cmd.yaw_dot = yd;
+  pos_cmd_pub.publish(legacy_cmd);
+}
+
 void publish_cmd(Vector3d p, Vector3d v, Vector3d a, Vector3d j, double y, double yd)
 {
-
-  cmd.header.stamp = ros::Time::now();
-  cmd.header.frame_id = "world";
-  cmd.trajectory_flag = quadrotor_msgs::PositionCommand::TRAJECTORY_STATUS_READY;
-  cmd.trajectory_id = traj_id_;
-
-  cmd.position.x = p(0);
-  cmd.position.y = p(1);
-  cmd.position.z = p(2);
-  cmd.velocity.x = v(0);
-  cmd.velocity.y = v(1);
-  cmd.velocity.z = v(2);
-  cmd.acceleration.x = a(0);
-  cmd.acceleration.y = a(1);
-  cmd.acceleration.z = a(2);
-  cmd.jerk.x = j(0);
-  cmd.jerk.y = j(1);
-  cmd.jerk.z = j(2);
-  cmd.yaw = y;
-  cmd.yaw_dot = yd;
-  pos_cmd_pub.publish(cmd);
-
+  std_msgs::Header header;
+  header.stamp = ros::Time::now();
+  header.frame_id = "world";
+  publish_legacy_cmd(p, v, a, j, y, yd, header);
+  publish_mavros_cmd(p, v, a, j, y, yd, header);
+  publish_cf_cmd(p, v, a, j, y, yd, header);
   last_pos_ = p;
 }
+
+void trackingPoseCallback(traj_utils::TrackingPose msg)
+{
+  float distance = msg.distance;
+  geometry_msgs::Vector3 centor = msg.center;
+  geometry_msgs::Vector3 normal = msg.normal;
+  quadrotor_msgs::Position cmd;
+  cmd.header.stamp = ros::Time::now();
+  cmd.header.frame_id = "world";
+
+  double theta = atan2(normal.y, normal.x);
+  double yaw = theta + M_PI;
+  cmd.x = centor.x + distance * cos(theta);
+  cmd.y = centor.y + distance * sin(theta);
+  cmd.z = centor.z;
+  cmd.yaw = yaw;
+
+  Vector3d pos(cmd.x, cmd.y, cmd.z);
+  Vector3d vel(Vector3d::Zero());
+  Vector3d acc(Vector3d::Zero());
+  Vector3d jer(Vector3d::Zero());
+  // publish_cmd(pos, vel, acc, jer, yaw, 0);
+  cmd_position_pub.publish(cmd);
+  publish_legacy_cmd(
+    pos, 
+    vel, 
+    acc, 
+    jer, 
+    yaw,
+    0, 
+    cmd.header);
+  last_pos_ = pos;
+  last_yaw_ = yaw;
+}
+
 
 void cmdCallback(const ros::TimerEvent &e)
 {
@@ -215,14 +329,28 @@ void cmdCallback(const ros::TimerEvent &e)
 
     // publish
     publish_cmd(pos, vel, acc, jer, yaw_yawdot.first, yaw_yawdot.second);
+    last_cmd_time_ = ros::Time::now();
 #if FLIP_YAW_AT_END or TURN_YAW_TO_CENTER_AT_END
     finished = false;
 #endif
   }
+  else if (t_cur >= traj_duration_ && activated_)
+  {
+    // hover when finished traj_
+    // pos = traj_->getPos(traj_duration_);
+    vel.setZero();
+    acc.setZero();
+    jer.setZero();
+    std_msgs::Header header;
+    header.stamp = ros::Time::now();
+    header.frame_id = "world";
+    publish_cf_cmd(last_pos_, vel, acc, jer, last_yaw_, 0, header);
+    if (time_now - last_cmd_time_ > ros::Duration(10.0))
+    {
+      activated_ = false;
+    }
 
 #if FLIP_YAW_AT_END
-  else if (t_cur >= traj_duration_)
-  {
     if (finished)
       return;
 
@@ -255,8 +383,8 @@ void cmdCallback(const ros::TimerEvent &e)
     time_last = time_now;
 
     publish_cmd(pos, vel, acc, jer, yaw_yawdot.first, yaw_yawdot.second);
-  }
 #endif
+  }
 
 #if TURN_YAW_TO_CENTER_AT_END
   else if (t_cur >= traj_duration_)
@@ -315,9 +443,13 @@ int main(int argc, char **argv)
   ros::NodeHandle nh("~");
 
   ros::Subscriber poly_traj_sub = nh.subscribe("planning/trajectory", 10, polyTrajCallback);
+  ros::Subscriber tracking_pose_sub = nh.subscribe("planning/track_pose", 10, trackingPoseCallback);
   ros::Subscriber heartbeat_sub = nh.subscribe("heartbeat", 10, heartbeatCallback);
 
   pos_cmd_pub = nh.advertise<quadrotor_msgs::PositionCommand>("/position_cmd", 50);
+  setpoint_mavros_pub = nh.advertise<mavros_msgs::PositionTarget>("/mavros/setpoint_raw/local", 50);
+  cmd_full_state_pub = nh.advertise<quadrotor_msgs::FullState>("/cmd_full_state", 50);
+  cmd_position_pub = nh.advertise<quadrotor_msgs::Position>("/cmd_position", 50);
 
   ros::Timer cmd_timer = nh.createTimer(ros::Duration(0.01), cmdCallback);
 

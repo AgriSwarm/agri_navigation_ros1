@@ -1,0 +1,82 @@
+<launch>
+
+    <!-- Controller need to running in ROS2 -->
+
+    <!-- Navigation -->
+    <arg name="map_size_x" value="200.0"/>
+    <arg name="map_size_y" value="200.0"/>
+    <arg name="map_size_z" value=" 3.0"/>
+    <arg name="odom_topic" value="cf/odom" />
+    <arg name="drone_id" value="0"/>
+
+    <include file="$(find swarm_bridge)/launch/bridge_udp.launch">
+        <arg name="drone_id" value="999"/>
+        <arg name="broadcast_ip" value="127.0.0.255"/>
+    </include>
+    <include file="$(find ego_planner)/launch/include/run_in_demo.xml">
+        <arg name="drone_id" value="$(arg drone_id)"/>
+        <arg name="map_size_x" value="$(arg map_size_x)"/>
+        <arg name="map_size_y" value="$(arg map_size_y)"/>
+        <arg name="map_size_z" value="$(arg map_size_z)"/>
+        <arg name="odom_topic" value="$(arg odom_topic)"/>
+        <arg name="flight_type" value="1"/>
+    </include>
+
+    <!-- Visualization -->
+
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find ego_planner)/launch/include/demo.rviz" required="true" />
+    <node pkg="visualization_bridge" name="sensor_visualization_node" type="sensor_visualization_node" output="screen">
+        <param name="display_objects" type="bool" value="false"/>
+        <param name="drones_num" type="int" value="1"/>
+    </node>
+
+    <!-- VIO -->
+    <arg name="config_path" default = "$(find agri_resources)/config/drones/crazyflie/vins.yaml" />
+	<arg name="vins_path" default = "$(find agri_resources)/config/drones/" />
+    <arg name="camera_number" default="5" />
+
+    <node name="local_sensing" pkg="local_sensing" type="local_sensing" output="log">
+        <param name="camera_number" type="int" value="$(arg camera_number)" />
+        <remap from="camera/image_raw" to="drone_$(arg drone_id)/color/image_raw" />
+    </node>
+
+    <node name="feature_tracker" pkg="feature_tracker" type="feature_tracker" output="log">
+        <param name="config_file" type="string" value="$(arg config_path)" />
+        <param name="vins_folder" type="string" value="$(arg vins_path)" />
+    </node>
+
+    <node name="vins_estimator" pkg="vins_estimator" type="vins_estimator" output="screen">
+        <param name="config_file" type="string" value="$(arg config_path)" />
+        <param name="vins_folder" type="string" value="$(arg vins_path)" />
+    </node>
+
+    <node name="pose_graph" pkg="pose_graph" type="pose_graph" output="screen">
+        <param name="config_file" type="string" value="$(arg config_path)" />
+        <param name="visualization_shift_x" type="int" value="0" />
+        <param name="visualization_shift_y" type="int" value="0" />
+        <param name="skip_cnt" type="int" value="0" />
+        <param name="skip_dis" type="double" value="0" />
+        <param name="drone_id" type="int" value="$(arg drone_id)" />
+        <remap from="/pose_graph/cf_pose" to="poses" />
+    </node>
+
+    <!-- Depth Estimator -->
+    <arg name="input_topic" default="/drone_$(arg drone_id)/color/image_raw"/>
+    <arg name="output_topic" default="/drone_$(arg drone_id)/depth/image_raw"/>
+    <arg name="model_name" default="model-small-traced.pt"/>
+    <arg name="out_orig_size" default="true"/>
+    <arg name="net_width" default="256"/>
+    <arg name="net_height" default="256"/>
+    <arg name="logging" default="false"/>
+
+    <node pkg="midas_cpp" type="midas_cpp" name="midas_cpp" output="log" respawn="true">
+        <param name="input_topic" value="$(arg input_topic)"/>
+        <param name="output_topic" value="$(arg output_topic)"/>
+        <param name="model_name" value="$(arg model_name)"/>
+        <param name="out_orig_size" value="$(arg out_orig_size)"/>
+        <param name="net_width" value="$(arg net_width)"/>
+        <param name="net_height" value="$(arg net_height)"/>
+        <param name="logging" value="$(arg logging)"/>
+    </node>
+
+</launch>

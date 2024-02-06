@@ -1,5 +1,6 @@
 #include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
+#include <nav_msgs/Path.h>
 #include <rviz_visual_tools/rviz_visual_tools.h>
 #include <visualization_msgs/Marker.h>
 #include <Eigen/Core>
@@ -28,11 +29,14 @@ public:
             visual_tools_sensor_[i]->loadMarkerPub();
             visual_tools_sensor_[i]->setLifetime(1);
         }
+        for (int i = 0; i < drones_num; ++i) {
+            path_pub_[i] = nh.advertise<nav_msgs::Path>("/drone_" + std::to_string(i) + "_visual_slam/path", 1, true);
+        }
         // Subscriber to odometry
         for (int i = 0; i < drones_num; ++i) {
             odom_sub_[i] = nh.subscribe<nav_msgs::Odometry>(
                 "/drone_" + std::to_string(i) + "_visual_slam/odom", 
-                1, 
+                1,
                 boost::bind(&SensorVisualization::odomCallback, this, boost::placeholders::_1, i)
             );
         }
@@ -54,6 +58,11 @@ public:
         // last_pose_ = msg->pose.pose;
         visual_tools_sensor_[i]->deleteAllMarkers();
         publishSensorZone(msg->pose.pose, i);
+        geometry_msgs::PoseStamped posestamped;
+        posestamped.pose = msg->pose.pose;
+        posestamped.header = msg->header;
+        paths_[i].poses.push_back(posestamped);
+        publishPath(i);
     }
     
     void publishSensorZone(geometry_msgs::Pose pose, int i) {
@@ -97,10 +106,23 @@ public:
         visual_tools_apple_->trigger();
     }
 
+    void publishPath(int i) {
+        if (paths_[i].poses.empty()) return;
+
+        // Set the frame ID and stamp
+        paths_[i].header.frame_id = "world";
+        paths_[i].header.stamp = ros::Time::now();
+
+        // Publish the path
+        path_pub_[i].publish(paths_[i]);
+    }
+
 private:
     static constexpr int DEFAULT_DRONES_NUM = 10;
     // ros::Subscriber odom_sub_;
     std::array<ros::Subscriber, DEFAULT_DRONES_NUM> odom_sub_;
+    std::array<ros::Publisher, DEFAULT_DRONES_NUM> path_pub_;
+    std::array<nav_msgs::Path, DEFAULT_DRONES_NUM> paths_;
     ros::Timer timer_;
     std::unique_ptr<rviz_visual_tools::RvizVisualTools> visual_tools_apple_;
     // std::unique_ptr<rviz_visual_tools::RvizVisualTools> visual_tools_sensor_;

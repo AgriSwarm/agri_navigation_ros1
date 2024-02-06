@@ -51,7 +51,7 @@
         <!-- <remap from="~grid_map/cloud" to="/map_generator/global_cloud"/> -->
         <remap from="~grid_map/pose"   to = "/drone_$(arg drone_id)_$(arg camera_pose_topic)"/>
         <!-- <remap from="~grid_map/depth" to = "/drone_$(arg drone_id)_$(arg depth_topic)"/> -->
-        <remap from="~grid_map/depth" to = "/camera/depth/image_raw"/>
+        <remap from="~grid_map/depth" to = "/drone_$(arg drone_id)/depth/image_raw"/>
         <!-- planning fsm -->
         <param name="fsm/flight_type" value="$(arg flight_type)" type="int"/>
         <param name="fsm/thresh_replan_time" value="1.0" type="double"/>
@@ -80,8 +80,8 @@
         <param name="grid_map/map_size_x" value="$(arg map_size_x_)" />
         <param name="grid_map/map_size_y" value="$(arg map_size_y_)" />
         <param name="grid_map/map_size_z" value="$(arg map_size_z_)" />
-        <param name="grid_map/local_update_range_x" value="5.5" />
-        <param name="grid_map/local_update_range_y" value="5.5" />
+        <param name="grid_map/local_update_range_x" value="6" />
+        <param name="grid_map/local_update_range_y" value="6" />
         <param name="grid_map/local_update_range_z" value="2.0" /> <!-- different meaning between grid_map.cpp and grid_map_bigmap.cpp -->
         <param name="grid_map/obstacles_inflation" value="0.1" />
         <param name="grid_map/local_map_margin" value="10"/>
@@ -97,10 +97,11 @@
         <!-- depth filter -->
         <param name="grid_map/use_depth_filter" value="true"/>
         <param name="grid_map/depth_filter_tolerance" value="0.15"/>
-        <param name="grid_map/depth_filter_maxdist" value="5.0"/>
+        <param name="grid_map/depth_filter_maxdist" value="100.0"/>
         <param name="grid_map/depth_filter_mindist" value="0.2"/>
         <param name="grid_map/depth_filter_margin" value="2"/>
-        <param name="grid_map/k_depth_scaling_factor" value="1000.0"/>
+        <param name="grid_map/k_depth_scaling_factor" value="1"/>
+        <param name="grid_map/est_depth_scaling_factor" value="10"/>
         <param name="grid_map/skip_pixel" value="1"/>
         <!-- local fusion -->
         <param name="grid_map/p_hit" value="0.65"/>
@@ -108,7 +109,7 @@
         <param name="grid_map/p_min" value="0.12"/>
         <param name="grid_map/p_max" value="0.90"/>
         <param name="grid_map/p_occ" value="0.80"/>
-        <param name="grid_map/fading_time" value="1000.0"/>
+        <param name="grid_map/fading_time" value="5.0"/>
         <param name="grid_map/min_ray_length" value="0.1"/>
         <param name="grid_map/max_ray_length" value="4.5"/>
         <param name="grid_map/visualization_truncate_height" value="1.9"/>
