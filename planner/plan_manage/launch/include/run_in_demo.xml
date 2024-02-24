@@ -24,6 +24,9 @@
     <arg name="target4_x" default="0.0"/>
     <arg name="target4_y" default="0.0"/>
     <arg name="target4_z" default="0.0"/>
+    <arg name="update_goal_threshold" default="0.01"/>
+    <arg name="update_tracking_goal_threshold" default="0.01"/>
+    <arg name="root_tracking_threshold" default="0.2"/>
     <!-- topic of your odometry such as VIO or LIO -->
     <arg name="odom_topic"/>
     <!-- main algorithm params -->
@@ -80,13 +83,17 @@
         <arg name="point4_z" value="$(arg target4_z)" />
     </include>
     <!-- trajectory server -->
-    <node pkg="ego_planner" name="drone_$(arg drone_id)_traj_server" type="traj_server" output="log">
-        <remap from="/position_cmd" to="drone_$(arg drone_id)_planning/pos_cmd"/>
-        <remap from="/mavros/setpoint_raw/local" to="drone_$(arg drone_id)_mavros/pos_cmd"/>
-        <remap from="/cmd_full_state" to="drone_$(arg drone_id)_cf/cmd_full_state"/>
+    <node pkg="ego_planner" name="drone_$(arg drone_id)_traj_server" type="traj_server" output="screen">
+        <param name="time_forward" value="1.0" type="double"/>
+        <param name="update_goal_threshold" value="$(arg update_goal_threshold)" type="double"/>
+        <param name="update_tracking_goal_threshold" value="$(arg update_tracking_goal_threshold)" type="double"/>
+        <param name="root_tracking_threshold" value="$(arg root_tracking_threshold)" type="double"/>
+        <remap from="position_cmd" to="drone_$(arg drone_id)_planning/pos_cmd"/>
+        <remap from="cmd_full_state" to="drone_$(arg drone_id)_cf/cmd_full_state"/>
+        <remap from="cmd_position" to="drone_$(arg drone_id)_cf/cmd_position"/>
         <remap from="~planning/trajectory" to="drone_$(arg drone_id)_planning/trajectory"/>
         <remap from="~planning/track_pose" to="drone_$(arg drone_id)_planning/track_pose"/>
-        <param name="traj_server/time_forward" value="1.0" type="double"/>
+        <remap from="~planning/odom" to="drone_$(arg drone_id)_$(arg odom_topic)"/>
     </node>
     <!-- use simulator -->
     <node pkg="odom_visualization" name="drone_$(arg drone_id)_odom_visualization" type="odom_visualization" output="screen">

@@ -4,6 +4,7 @@
 #include <Eigen/Eigen>
 #include <path_searching/dyn_a_star.h>
 #include <plan_env/grid_map.h>
+// #include <plan_env/grid_map_bigmap.h>
 #include <ros/ros.h>
 #include "optimizer/lbfgs.hpp"
 #include <traj_utils/plan_container.hpp>

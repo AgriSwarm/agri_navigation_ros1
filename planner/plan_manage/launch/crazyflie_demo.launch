@@ -20,45 +20,41 @@
         <arg name="map_size_z" value="$(arg map_size_z)"/>
         <arg name="odom_topic" value="$(arg odom_topic)"/>
         <arg name="flight_type" value="1"/>
+        <arg name="update_goal_threshold" value="0.01"/>
+        <arg name="update_tracking_goal_threshold" value="0.01"/>
+        <arg name="root_tracking_threshold" value="0.2"/>
     </include>
-
-    <!-- Visualization -->
-
-    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find ego_planner)/launch/include/demo.rviz" required="true" />
-    <node pkg="visualization_bridge" name="sensor_visualization_node" type="sensor_visualization_node" output="screen">
-        <param name="display_objects" type="bool" value="false"/>
-        <param name="drones_num" type="int" value="1"/>
-    </node>
 
     <!-- VIO -->
     <arg name="config_path" default = "$(find agri_resources)/config/drones/crazyflie/vins.yaml" />
 	<arg name="vins_path" default = "$(find agri_resources)/config/drones/" />
     <arg name="camera_number" default="5" />
 
-    <node name="local_sensing" pkg="local_sensing" type="local_sensing" output="log">
+    <node name="local_sensing" pkg="local_sensing" type="local_sensing" output="screen">
         <param name="camera_number" type="int" value="$(arg camera_number)" />
+        <param name="fps" type="int" value="30" />
         <remap from="camera/image_raw" to="drone_$(arg drone_id)/color/image_raw" />
     </node>
 
-    <node name="feature_tracker" pkg="feature_tracker" type="feature_tracker" output="log">
+    <!-- <node name="feature_tracker" pkg="feature_tracker" type="feature_tracker" output="log">
         <param name="config_file" type="string" value="$(arg config_path)" />
         <param name="vins_folder" type="string" value="$(arg vins_path)" />
-    </node>
+    </node> -->
 
-    <node name="vins_estimator" pkg="vins_estimator" type="vins_estimator" output="screen">
+    <!-- <node name="vins_estimator" pkg="vins_estimator" type="vins_estimator" output="screen">
         <param name="config_file" type="string" value="$(arg config_path)" />
         <param name="vins_folder" type="string" value="$(arg vins_path)" />
-    </node>
+    </node> -->
 
-    <node name="pose_graph" pkg="pose_graph" type="pose_graph" output="screen">
+    <!-- <node name="pose_graph" pkg="pose_graph" type="pose_graph" output="screen">
         <param name="config_file" type="string" value="$(arg config_path)" />
         <param name="visualization_shift_x" type="int" value="0" />
         <param name="visualization_shift_y" type="int" value="0" />
         <param name="skip_cnt" type="int" value="0" />
         <param name="skip_dis" type="double" value="0" />
         <param name="drone_id" type="int" value="$(arg drone_id)" />
-        <remap from="/pose_graph/cf_pose" to="poses" />
-    </node>
+        <remap from="/pose_graph/cf_pose" to="extended_poses" />
+    </node> -->
 
     <!-- Depth Estimator -->
     <arg name="input_topic" default="/drone_$(arg drone_id)/color/image_raw"/>
@@ -77,6 +73,50 @@
         <param name="net_width" value="$(arg net_width)"/>
         <param name="net_height" value="$(arg net_height)"/>
         <param name="logging" value="$(arg logging)"/>
+    </node>
+
+    <!-- Pose Estimator -->
+    <arg name="depth_scaling_factor" default="10" />
+    <arg name="inverse_depth" default="true" />
+    <arg name="camera_coordinate" default="false" />
+    <arg name="identity_threshold" default="0.1" />
+    <arg name="tracking_distance" default="0.2" />
+    <arg name="lost_time_threshold" default="3.0" />
+    <arg name="capture_area_margin" default="0.3" />
+
+    <node name="estimate_manager" pkg="pose_estimator" type="pose_estimator" output="screen">
+        <param name="config_file" type="string" value="$(arg config_path)" />
+        <param name="depth_scaling_factor" type="double" value="$(arg depth_scaling_factor)" />
+        <param name="inverse_depth" type="bool" value="$(arg inverse_depth)" />
+        <param name="camera_coordinate" type="bool" value="$(arg camera_coordinate)" />
+        <param name="identity_threshold" type="double" value="$(arg identity_threshold)" />
+        <param name="tracking_distance" type="double" value="$(arg tracking_distance)" />
+        <param name="lost_time_threshold" type="double" value="$(arg lost_time_threshold)" />
+        <param name="capture_area_margin" type="double" value="$(arg capture_area_margin)" />
+        <!-- <param name="world_frame_id" type="string" value="$(arg world_frame_id)" /> -->
+        <remap from="depth" to="/drone_$(arg drone_id)/depth/image_raw" />
+        <remap from="flower_poses" to="drone_$(arg drone_id)_sensing/flower_poses"/>
+        <remap from="target_flower_pose" to="drone_$(arg drone_id)_planning/track_pose"/>
+        <remap from="odom" to="drone_$(arg drone_id)_$(arg odom_topic)"/>]
+        <remap from="custom" to="drone_$(arg drone_id)_cf/custom"/>
+    </node>
+
+    <!-- <node name="pose_estimator" pkg="pose_estimator" type="flower_pose_estimator.py" output="screen">
+        <remap from="flower_poses" to="drone_$(arg drone_id)_sensing/flower_poses"/>
+        <remap from="camera/image_raw" to="drone_$(arg drone_id)/color/image_raw"/>
+    </node> -->
+
+    <param name="robot_description" textfile="$(find agri_resources)/urdf/drones/cf2x.urdf" />
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
+        <param name="tf_prefix" value="drone_0" />
+        <param name="publish_frequency" type="double" value="30.0" />
+    </node>
+
+    <!-- Visualization -->
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find ego_planner)/launch/include/demo.rviz" required="true" />
+    <node pkg="visualization_bridge" name="sensor_visualization_node" type="sensor_visualization_node" output="screen">
+        <param name="display_objects" type="bool" value="false"/>
+        <param name="drones_num" type="int" value="1"/>
     </node>
 
 </launch>

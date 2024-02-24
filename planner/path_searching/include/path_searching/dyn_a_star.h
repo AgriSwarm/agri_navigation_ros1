@@ -6,6 +6,7 @@
 #include <ros/console.h>
 #include <Eigen/Eigen>
 #include <plan_env/grid_map.h>
+// #include <plan_env/grid_map_bigmap.h>
 #include <queue>
 
 constexpr double inf = 1 >> 20;

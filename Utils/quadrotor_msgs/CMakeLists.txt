@@ -77,6 +77,7 @@ add_message_files(
   GoalSet.msg
   FullState.msg
   Position.msg
+  TrackingPose.msg
 )
 
 generate_messages(

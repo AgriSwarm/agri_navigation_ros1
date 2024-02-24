@@ -1,0 +1,38 @@
+<launch>
+    <arg name="map_size_x" value="24"/>
+    <arg name="map_size_y" value="24"/>
+    <arg name="map_size_z" value="7"/>
+    <arg name="odom_topic" value="visual_slam/odom" />
+    <arg name="drone_id" value="0"/>
+    
+    <include file="$(find ego_planner)/launch/include/run_in_sim.xml">
+        <arg name="drone_id" value="$(arg drone_id)"/>
+        <arg name="init_x" value="-15.0"/>
+        <arg name="init_y" value="0.0"/>
+        <arg name="init_z" value="1.0"/>
+        <arg name="map_size_x" value="$(arg map_size_x)"/>
+        <arg name="map_size_y" value="$(arg map_size_y)"/>
+        <arg name="map_size_z" value="$(arg map_size_z)"/>
+        <arg name="odom_topic" value="$(arg odom_topic)"/>
+        <arg name="flight_type" value="1"/>
+    </include>
+
+    <node pkg="pose_estimator" name="fake_estimator" type="fake_estimator" output="screen">
+        <param name="est_detect_pose_rate" value="10.0"/>
+        <param name="world_frame_id" value="world"/>
+        <param name="sensing_distance" value="5.0"/>
+        <param name="tracking_distance" value="1.0"/>   
+        <param name="capture_area_margin" value="3.0"/>
+        <remap from="odom" to="drone_$(arg drone_id)_visual_slam/odom"/>
+        <remap from="target_flower_pose" to="drone_$(arg drone_id)_planning/track_pose"/>
+    </node>
+
+    <param name="robot_description" textfile="$(find agri_resources)/urdf/drones/cf2x.urdf" />
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
+        <param name="tf_prefix" value="drone_0" />
+        <param name="publish_frequency" type="double" value="30.0" />
+    </node>
+
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find ego_planner)/launch/include/proto.rviz" required="true" />
+</launch>
+    

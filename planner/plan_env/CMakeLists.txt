@@ -41,6 +41,7 @@ link_directories(${PCL_LIBRARY_DIRS})
 
 add_library( plan_env 
     src/grid_map.cpp 
+    # src/grid_map_bigmap.cpp
     src/raycast.cpp
     )
 
