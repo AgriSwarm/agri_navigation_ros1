@@ -8,6 +8,8 @@
     <arg name="map_size_z" value=" 3.0"/>
     <arg name="odom_topic" value="cf/odom" />
     <arg name="drone_id" value="0"/>
+    <arg name="est_depth_scaling_factor" value="10"/>
+    <arg name="inverse_depth" value="true"/>
 
     <include file="$(find swarm_bridge)/launch/bridge_udp.launch">
         <arg name="drone_id" value="999"/>
@@ -23,6 +25,8 @@
         <arg name="update_goal_threshold" value="0.01"/>
         <arg name="update_tracking_goal_threshold" value="0.01"/>
         <arg name="root_tracking_threshold" value="0.2"/>
+        <arg name="est_depth_scaling_factor" value="$(arg est_depth_scaling_factor)"/>
+        <arg name="inverse_depth" value="$(arg inverse_depth)"/>
     </include>
 
     <!-- VIO -->
@@ -76,8 +80,6 @@
     </node>
 
     <!-- Pose Estimator -->
-    <arg name="depth_scaling_factor" default="10" />
-    <arg name="inverse_depth" default="true" />
     <arg name="camera_coordinate" default="false" />
     <arg name="identity_threshold" default="0.1" />
     <arg name="tracking_distance" default="0.2" />
@@ -86,7 +88,7 @@
 
     <node name="estimate_manager" pkg="pose_estimator" type="pose_estimator" output="screen">
         <param name="config_file" type="string" value="$(arg config_path)" />
-        <param name="depth_scaling_factor" type="double" value="$(arg depth_scaling_factor)" />
+        <param name="depth_scaling_factor" type="double" value="$(arg est_depth_scaling_factor)" />
         <param name="inverse_depth" type="bool" value="$(arg inverse_depth)" />
         <param name="camera_coordinate" type="bool" value="$(arg camera_coordinate)" />
         <param name="identity_threshold" type="double" value="$(arg identity_threshold)" />

@@ -31,6 +31,7 @@ void GridMap::initMap(ros::NodeHandle &nh)
   node_.param("grid_map/depth_filter_margin", mp_.depth_filter_margin_, -1);
   node_.param("grid_map/k_depth_scaling_factor", mp_.k_depth_scaling_factor_, -1.0);
   node_.param("grid_map/est_depth_scaling_factor", mp_.est_depth_scaling_factor_, -1.0);
+  node_.param("grid_map/inverse_depth", mp_.inverse_depth_, false);
   node_.param("grid_map/skip_pixel", mp_.skip_pixel_, -1);
 
   node_.param("grid_map/p_hit", mp_.p_hit_, 0.70);
@@ -522,7 +523,14 @@ void GridMap::projectDepthImage()
         for (int u = mp_.depth_filter_margin_; u < cols - mp_.depth_filter_margin_;
              u += mp_.skip_pixel_)
         {
-          depth = mp_.fx_ / ((*row_ptr) * inv_factor);
+          if(mp_.inverse_depth_)
+          {
+            depth = mp_.fx_ / ((*row_ptr) * inv_factor);
+          }
+          else
+          {
+            depth = (*row_ptr) * inv_factor;
+          }
           row_ptr = row_ptr + mp_.skip_pixel_;
           // ROS_INFO("u: %d, v: %d, value: %d, depth: %f", u, v, *row_ptr, depth);
 

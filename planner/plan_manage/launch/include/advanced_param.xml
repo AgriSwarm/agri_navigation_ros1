@@ -33,6 +33,8 @@
     <arg name="flight_type"/>
     <arg name="use_multitopology_trajs"/>
     <arg name="drone_id"/>
+    <arg name="est_depth_scaling_factor"/>
+    <arg name="inverse_depth"/>
     <!-- main node -->
     <!-- <node pkg="ego_planner" name="ego_planner_node" type="ego_planner_node" output="screen" launch-prefix="valgrind"> -->
     <node pkg="ego_planner" name="drone_$(arg drone_id)_ego_planner_node" type="ego_planner_node" output="screen">
@@ -101,7 +103,8 @@
         <param name="grid_map/depth_filter_mindist" value="0.2"/>
         <param name="grid_map/depth_filter_margin" value="2"/>
         <param name="grid_map/k_depth_scaling_factor" value="1"/>
-        <param name="grid_map/est_depth_scaling_factor" value="10"/>
+        <param name="grid_map/est_depth_scaling_factor" value="$(arg est_depth_scaling_factor)"/>
+        <param name="gridmap/inverse_depth" type="bool" value="$(arg inverse_depth)"/>
         <param name="grid_map/skip_pixel" value="1"/>
         <!-- local fusion -->
         <param name="grid_map/p_hit" value="0.65"/>

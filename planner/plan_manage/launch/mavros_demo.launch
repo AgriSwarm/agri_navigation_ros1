@@ -41,6 +41,8 @@
     <arg name="map_size_y" value="200.0"/>
     <arg name="map_size_z" value=" 3.0"/>
     <arg name="odom_topic" value="visual_slam/odom" />
+    <arg name="est_depth_scaling_factor" value="1"/>
+    <arg name="inverse_depth" value="false"/>
 
     <include file="$(find swarm_bridge)/launch/bridge_udp.launch">
         <arg name="drone_id" value="999"/>
@@ -53,6 +55,8 @@
         <arg name="map_size_z" value="$(arg map_size_z)"/>
         <arg name="odom_topic" value="$(arg odom_topic)"/>
         <arg name="flight_type" value="1"/>
+        <arg name="est_depth_scaling_factor" value="$(arg est_depth_scaling_factor)"/>
+        <arg name="inverse_depth" value="$(arg inverse_depth)"/>
     </include>
 
     <!-- Visualization -->
@@ -64,7 +68,7 @@
         <param name="publish_frequency" type="double" value="30.0" />
     </node>
 
-    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find ego_planner)/launch/include/mavros.rviz" required="true" />
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find ego_planner)/launch/include/proto.rviz" required="true" />
     <node pkg="visualization_bridge" name="sensor_visualization_node" type="sensor_visualization_node" output="screen">
         <param name="display_objects" type="bool" value="false"/>
         <param name="drones_num" type="int" value="1"/>
