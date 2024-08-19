@@ -130,7 +130,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES irobot_msgs
-#  CATKIN_DEPENDS geometry_msgs nav_msgs
+  CATKIN_DEPENDS quadrotor_msgs
 #  DEPENDS system_lib
 )
 
