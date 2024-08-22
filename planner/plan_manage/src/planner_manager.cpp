@@ -15,14 +15,7 @@ namespace ego_planner
   void EGOPlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualization::Ptr vis)
   {
     /* read algorithm parameters */
-
-    nh.param("manager/max_vel", pp_.max_vel_, -1.0);
-    nh.param("manager/max_acc", pp_.max_acc_, -1.0);
-    nh.param("manager/feasibility_tolerance", pp_.feasibility_tolerance_, 0.0);
-    nh.param("manager/polyTraj_piece_length", pp_.polyTraj_piece_length, -1.0);
-    nh.param("manager/planning_horizon", pp_.planning_horizen_, 5.0);
-    nh.param("manager/use_multitopology_trajs", pp_.use_multitopology_trajs, false);
-    nh.param("manager/drone_id", pp_.drone_id, -1);
+    initParams(nh);
 
     grid_map_.reset(new GridMap);
     grid_map_->initMap(nh);
@@ -35,6 +28,51 @@ namespace ego_planner
 
     ploy_traj_opt_->setSwarmTrajs(&traj_.swarm_traj);
     ploy_traj_opt_->setDroneId(pp_.drone_id);
+  }
+
+  void EGOPlannerManager::initParams(ros::NodeHandle &nh)
+  {
+    std::string ego_config_path;
+    nh.param<std::string>("ego_config_path", ego_config_path, "");
+    cv::FileStorage fsSettings;
+    try {
+        fsSettings.open(ego_config_path.c_str(), cv::FileStorage::READ);
+        std::cout << "EGOPlannerManager Loaded EGO config from " << ego_config_path << std::endl;
+    } catch(cv::Exception ex) {
+        std::cerr << "ERROR:" << ex.what() << " Can't open config file" << std::endl;
+        exit(-1);
+    }
+
+    cv::FileNode manager_node = fsSettings["manager"];
+    if (manager_node.empty())
+    {
+        ROS_ERROR("[EGOPlannerManager] Can't find 'manager' in config file.");
+    }
+
+    pp_.max_vel_ = (double)manager_node["max_vel"];
+    pp_.max_acc_ = (double)manager_node["max_acc"];
+    pp_.feasibility_tolerance_ = (double)manager_node["feasibility_tolerance"];
+    pp_.polyTraj_piece_length = (double)manager_node["polyTraj_piece_length"];
+    pp_.planning_horizen_ = (double)manager_node["planning_horizen"];
+    pp_.use_multitopology_trajs = (int)manager_node["use_multitopology_trajs"] != 0;
+    nh.param("drone_id", pp_.drone_id, -1);
+    cout << "manager/drone_id: " << pp_.drone_id << endl;
+    cout << "manager/max_vel: " << pp_.max_vel_ << endl;
+    cout << "manager/max_acc: " << pp_.max_acc_ << endl;
+    cout << "manager/feasibility_tolerance: " << pp_.feasibility_tolerance_ << endl;
+    cout << "manager/polyTraj_piece_length: " << pp_.polyTraj_piece_length << endl;
+    cout << "manager/planning_horizen: " << pp_.planning_horizen_ << endl;
+    cout << "manager/use_multitopology_trajs: " << pp_.use_multitopology_trajs << endl;
+
+    fsSettings.release();
+
+    // nh.param("manager/max_vel", pp_.max_vel_, 1.0);
+    // nh.param("manager/max_acc", pp_.max_acc_, 1.0);
+    // nh.param("manager/feasibility_tolerance", pp_.feasibility_tolerance_, 0.0);
+    // nh.param("manager/polyTraj_piece_length", pp_.polyTraj_piece_length, 0.1);
+    // nh.param("manager/planning_horizon", pp_.planning_horizen_, 5.0);
+    // nh.param("manager/use_multitopology_trajs", pp_.use_multitopology_trajs, false);
+    // nh.param("manager/drone_id", pp_.drone_id, -1);
   }
 
   bool EGOPlannerManager::reboundReplan(

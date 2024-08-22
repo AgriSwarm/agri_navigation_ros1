@@ -60,6 +60,7 @@ namespace ego_planner
     TrajContainer traj_;
 
   private:
+    void initParams(ros::NodeHandle &nh);
     PlanningVisualization::Ptr visualization_;
 
     PolyTrajOptimizer::Ptr ploy_traj_opt_;

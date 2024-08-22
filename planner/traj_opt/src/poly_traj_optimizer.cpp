@@ -1615,19 +1615,64 @@ namespace ego_planner
   /* helper functions */
   void PolyTrajOptimizer::setParam(ros::NodeHandle &nh)
   {
-    nh.param("optimization/constraint_points_perPiece", cps_num_prePiece_, -1);
-    nh.param("optimization/weight_obstacle", wei_obs_, -1.0);
-    nh.param("optimization/weight_obstacle_soft", wei_obs_soft_, -1.0);
-    nh.param("optimization/weight_swarm", wei_swarm_, -1.0);
-    nh.param("optimization/weight_feasibility", wei_feas_, -1.0);
-    nh.param("optimization/weight_sqrvariance", wei_sqrvar_, -1.0);
-    nh.param("optimization/weight_time", wei_time_, -1.0);
-    nh.param("optimization/obstacle_clearance", obs_clearance_, -1.0);
-    nh.param("optimization/obstacle_clearance_soft", obs_clearance_soft_, -1.0);
-    nh.param("optimization/swarm_clearance", swarm_clearance_, -1.0);
-    nh.param("optimization/max_vel", max_vel_, -1.0);
-    nh.param("optimization/max_acc", max_acc_, -1.0);
-    nh.param("optimization/max_jer", max_jer_, -1.0);
+    std::string ego_config_path;
+    nh.param<std::string>("ego_config_path", ego_config_path, "");
+    cv::FileStorage fsSettings;
+    try {
+        fsSettings.open(ego_config_path.c_str(), cv::FileStorage::READ);
+        std::cout << "PolyTrajOptimizer Loaded EGO config from " << ego_config_path << std::endl;
+    } catch(cv::Exception ex) {
+        std::cerr << "ERROR:" << ex.what() << " Can't open config file" << std::endl;
+        exit(-1);
+    }
+
+    cv::FileNode manager_node = fsSettings["optimization"];
+    if (manager_node.empty())
+    {
+        ROS_ERROR("[PolyTrajOptimizer] Can't find 'optimization' in config file.");
+    }
+
+    cps_num_prePiece_ = (int)manager_node["constraint_points_perPiece"];
+    wei_obs_ = (double)manager_node["weight_obstacle"];
+    wei_obs_soft_ = (double)manager_node["weight_obstacle_soft"];
+    wei_swarm_ = (double)manager_node["weight_swarm"];
+    wei_feas_ = (double)manager_node["weight_feasibility"];
+    wei_sqrvar_ = (double)manager_node["weight_sqrvariance"];
+    wei_time_ = (double)manager_node["weight_time"];
+    obs_clearance_ = (double)manager_node["obstacle_clearance"];
+    obs_clearance_soft_ = (double)manager_node["obstacle_clearance_soft"];
+    swarm_clearance_ = (double)manager_node["swarm_clearance"];
+    max_vel_ = (double)manager_node["max_vel"];
+    max_acc_ = (double)manager_node["max_acc"];
+    max_jer_ = (double)manager_node["max_jer"];
+
+    cout << "optimization/constraint_points_perPiece: " << cps_num_prePiece_ << endl;
+    cout << "optimization/weight_obstacle: " << wei_obs_ << endl;
+    cout << "optimization/weight_obstacle_soft: " << wei_obs_soft_ << endl;
+    cout << "optimization/weight_swarm: " << wei_swarm_ << endl;
+    cout << "optimization/weight_feasibility: " << wei_feas_ << endl;
+    cout << "optimization/weight_sqrvariance: " << wei_sqrvar_ << endl;
+    cout << "optimization/weight_time: " << wei_time_ << endl;
+    cout << "optimization/obstacle_clearance: " << obs_clearance_ << endl;
+    cout << "optimization/obstacle_clearance_soft: " << obs_clearance_soft_ << endl;
+    cout << "optimization/swarm_clearance: " << swarm_clearance_ << endl;
+    cout << "optimization/max_vel: " << max_vel_ << endl;
+    cout << "optimization/max_acc: " << max_acc_ << endl;
+    cout << "optimization/max_jer: " << max_jer_ << endl;
+    
+    // nh.param("optimization/constraint_points_perPiece", cps_num_prePiece_, -1);
+    // nh.param("optimization/weight_obstacle", wei_obs_, -1.0);
+    // nh.param("optimization/weight_obstacle_soft", wei_obs_soft_, -1.0);
+    // nh.param("optimization/weight_swarm", wei_swarm_, -1.0);
+    // nh.param("optimization/weight_feasibility", wei_feas_, -1.0);
+    // nh.param("optimization/weight_sqrvariance", wei_sqrvar_, -1.0);
+    // nh.param("optimization/weight_time", wei_time_, -1.0);
+    // nh.param("optimization/obstacle_clearance", obs_clearance_, -1.0);
+    // nh.param("optimization/obstacle_clearance_soft", obs_clearance_soft_, -1.0);
+    // nh.param("optimization/swarm_clearance", swarm_clearance_, -1.0);
+    // nh.param("optimization/max_vel", max_vel_, -1.0);
+    // nh.param("optimization/max_acc", max_acc_, -1.0);
+    // nh.param("optimization/max_jer", max_jer_, -1.0);
   }
 
   void PolyTrajOptimizer::setEnvironment(const GridMap::Ptr &map)

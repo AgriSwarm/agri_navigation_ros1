@@ -90,6 +90,8 @@ namespace ego_planner
     ros::Subscriber waypoint_sub_, odom_sub_, trigger_sub_, broadcast_ploytraj_sub_, mandatory_stop_sub_;
     ros::Publisher poly_traj_pub_, data_disp_pub_, broadcast_ploytraj_pub_, heartbeat_pub_, ground_height_pub_;
 
+    void initParams(ros::NodeHandle &nh);
+
     /* state machine functions */
     void execFSMCallback(const ros::TimerEvent &e);
     void changeFSMExecState(FSM_EXEC_STATE new_state, string pos_call);

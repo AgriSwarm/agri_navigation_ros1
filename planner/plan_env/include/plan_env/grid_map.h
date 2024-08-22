@@ -143,6 +143,7 @@ public:
   ~GridMap() {}
 
   void initMap(ros::NodeHandle &nh);
+  void initParams(ros::NodeHandle &nh);
   inline int getOccupancy(Eigen::Vector3d pos);
   inline int getInflateOccupancy(Eigen::Vector3d pos);
   inline double getResolution();
@@ -178,6 +179,8 @@ private:
   void publishMapInflate();
 
   // get depth image and camera pose
+  void poseCallback(const geometry_msgs::PoseStampedConstPtr &pose);
+  void depthCallback(const sensor_msgs::ImageConstPtr &img);
   void depthPoseCallback(const sensor_msgs::ImageConstPtr &img,
                          const geometry_msgs::PoseStampedConstPtr &pose);
   void extrinsicCallback(const nav_msgs::OdometryConstPtr &odom);
@@ -223,7 +226,7 @@ private:
   SynchronizerImagePose sync_image_pose_;
   SynchronizerImageOdom sync_image_odom_;
 
-  ros::Subscriber indep_cloud_sub_, indep_odom_sub_, extrinsic_sub_;
+  ros::Subscriber indep_cloud_sub_, indep_odom_sub_, extrinsic_sub_, only_pose_sub_, only_depth_sub_;
   ros::Publisher map_pub_, map_inf_pub_;
   ros::Timer occ_timer_, vis_timer_, fading_timer_;
 

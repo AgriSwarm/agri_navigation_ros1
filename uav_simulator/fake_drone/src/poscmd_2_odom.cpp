@@ -61,10 +61,10 @@ void pubOdom()
 	    odom.pose.pose.position.y = _init_y;
 	    odom.pose.pose.position.z = _init_z;
 
-	    odom.pose.pose.orientation.w = 1;
-	    odom.pose.pose.orientation.x = 0;
-	    odom.pose.pose.orientation.y = 0;
-	    odom.pose.pose.orientation.z = 0;
+	    odom.pose.pose.orientation.w = 0.5;
+	    odom.pose.pose.orientation.x = 0.5;
+	    odom.pose.pose.orientation.y = 0.5;
+	    odom.pose.pose.orientation.z = 0.5;
 
 	    odom.twist.twist.linear.x = 0.0;
 	    odom.twist.twist.linear.y = 0.0;
@@ -90,7 +90,7 @@ int main (int argc, char** argv)
     _cmd_sub  = nh.subscribe( "command", 1, rcvPosCmdCallBack );
     _odom_pub = nh.advertise<nav_msgs::Odometry>("odometry", 1);                      
 
-    ros::Rate rate(100);
+    ros::Rate rate(10);
     bool status = ros::ok();
     while(status) 
     {

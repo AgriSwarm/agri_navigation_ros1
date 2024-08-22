@@ -6,30 +6,25 @@ namespace ego_planner
 
   void EGOReplanFSM::init(ros::NodeHandle &nh)
   {
-    exec_state_ = FSM_EXEC_STATE::INIT;
-    have_target_ = false;
-    have_odom_ = false;
-    have_recv_pre_agent_ = false;
-    flag_escape_emergency_ = true;
-    mandatory_stop_ = false;
+
+    initParams(nh);
 
     /*  fsm param  */
-    nh.param("fsm/flight_type", target_type_, -1);
-    nh.param("fsm/thresh_replan_time", replan_thresh_, -1.0);
-    nh.param("fsm/planning_horizon", planning_horizen_, -1.0);
-    nh.param("fsm/emergency_time", emergency_time_, 1.0);
-    nh.param("fsm/realworld_experiment", flag_realworld_experiment_, false);
-    nh.param("fsm/fail_safe", enable_fail_safe_, true);
-    nh.param("fsm/ground_height_measurement", enable_ground_height_measurement_, false);
+    // nh.param("fsm/flight_type", target_type_, -1);
+    // nh.param("fsm/thresh_replan_time", replan_thresh_, -1.0);
+    // nh.param("fsm/planning_horizon", planning_horizen_, -1.0);
+    // nh.param("fsm/emergency_time", emergency_time_, 1.0);
+    // nh.param("fsm/realworld_experiment", flag_realworld_experiment_, false);
+    // nh.param("fsm/fail_safe", enable_fail_safe_, true);
+    // nh.param("fsm/ground_height_measurement", enable_ground_height_measurement_, false);
 
-    nh.param("fsm/waypoint_num", waypoint_num_, -1);
-    for (int i = 0; i < waypoint_num_; i++)
-    {
-      nh.param("fsm/waypoint" + to_string(i) + "_x", waypoints_[i][0], -1.0);
-      nh.param("fsm/waypoint" + to_string(i) + "_y", waypoints_[i][1], -1.0);
-      nh.param("fsm/waypoint" + to_string(i) + "_z", waypoints_[i][2], -1.0);
-    }
-
+    // nh.param("fsm/waypoint_num", waypoint_num_, -1);
+    // for (int i = 0; i < waypoint_num_; i++)
+    // {
+    //   nh.param("fsm/waypoint" + to_string(i) + "_x", waypoints_[i][0], -1.0);
+    //   nh.param("fsm/waypoint" + to_string(i) + "_y", waypoints_[i][1], -1.0);
+    //   nh.param("fsm/waypoint" + to_string(i) + "_z", waypoints_[i][2], -1.0);
+    // }
 
     /* initialize main modules */
     visualization_.reset(new PlanningVisualization(nh));
@@ -74,10 +69,56 @@ namespace ego_planner
         ros::Duration(0.001).sleep();
       }
 
-      readGivenWpsAndPlan();
+      // readGivenWpsAndPlan();
     }
     else
       cout << "Wrong target_type_ value! target_type_=" << target_type_ << endl;
+  }
+
+  void EGOReplanFSM::initParams(ros::NodeHandle &nh)
+  {
+
+    std::string ego_config_path;
+    nh.param<std::string>("ego_config_path", ego_config_path, "");
+    cv::FileStorage fsSettings;
+    try {
+        fsSettings.open(ego_config_path.c_str(), cv::FileStorage::READ);
+        std::cout << "EGOReplanFSM Loaded EGO config from " << ego_config_path << std::endl;
+    } catch(cv::Exception ex) {
+        std::cerr << "ERROR:" << ex.what() << " Can't open config file" << std::endl;
+        exit(-1);
+    }
+
+    exec_state_ = FSM_EXEC_STATE::INIT;
+    have_target_ = false;
+    have_odom_ = false;
+    have_recv_pre_agent_ = false;
+    flag_escape_emergency_ = true;
+    mandatory_stop_ = false;
+
+    cv::FileNode fsm_node = fsSettings["fsm"];
+    if (fsm_node.empty())
+    {
+        ROS_ERROR("[EGOReplanFSM] Can't find 'fsm' in config file.");
+    }
+
+    target_type_ = (int)fsm_node["flight_type"];
+    replan_thresh_ = (double)fsm_node["thresh_replan_time"];
+    planning_horizen_ = (double)fsm_node["planning_horizon"];
+    emergency_time_ = (double)fsm_node["emergency_time"];
+    flag_realworld_experiment_ = (int)fsm_node["realworld_experiment"] != 0;
+    enable_fail_safe_ = (int)fsm_node["fail_safe"] != 0;
+    enable_ground_height_measurement_ = (int)fsm_node["ground_height_measurement"] != 0;
+
+    cout << "fsm/target_type: " << target_type_ << endl;
+    cout << "fsm/thresh_replan_time: " << replan_thresh_ << endl;
+    cout << "fsm/planning_horizon: " << planning_horizen_ << endl;
+    cout << "fsm/emergency_time: " << emergency_time_ << endl;
+    cout << "fsm/realworld_experiment: " << flag_realworld_experiment_ << endl;
+    cout << "fsm/fail_safe: " << enable_fail_safe_ << endl;
+    cout << "fsm/ground_height_measurement: " << enable_ground_height_measurement_ << endl;
+
+    fsSettings.release();
   }
 
   void EGOReplanFSM::execFSMCallback(const ros::TimerEvent &e)
