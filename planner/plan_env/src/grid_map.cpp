@@ -225,14 +225,20 @@
         static double max_raycasttime = 0;
         static double inflationtime = 0;
         static double max_inflationtime = 0;
+        static double callbacktime = 0;
+        static double max_callbacktime = 0;
+
         raycasttime += (t4 - t3).toSec();
         max_raycasttime = max(max_raycasttime, (t4 - t3).toSec());
         inflationtime += (t5 - t4).toSec();
         max_inflationtime = max(max_inflationtime, (t5 - t4).toSec());
+        callbacktime += (t5 - t1).toSec();
+        max_callbacktime = max(max_callbacktime, (t5 - t1).toSec());
         ++updatetimes;
 
         printf("Raycast(ms): cur t = %lf, avg t = %lf, max t = %lf\n", (t4 - t3).toSec() * 1000, raycasttime / updatetimes * 1000, max_raycasttime * 1000);
         printf("Infaltion(ms): cur t = %lf, avg t = %lf, max t = %lf\n", (t5 - t4).toSec() * 1000, inflationtime / updatetimes * 1000, max_inflationtime * 1000);
+        printf("updateOccupancyCallback(ms): cur t = %lf, avg t = %lf, max t = %lf\n", (t5 - t1).toSec() * 1000, callbacktime / updatetimes * 1000, max_callbacktime * 1000);
         }
     }
 
