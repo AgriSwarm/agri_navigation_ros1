@@ -105,6 +105,22 @@
         mp_.min_ray_length_ = (double)fsSettings["grid_map"]["min_ray_length"];
         mp_.show_occ_time_ = ((int)fsSettings["grid_map"]["show_occ_time"]) != 0;
 
+        Eigen::Matrix4d cam2body_ = Eigen::Matrix4d::Identity();
+        cv::Mat T_body_cam;
+        fsSettings["grid_map"]["body_T_cam"] >> T_body_cam;
+        if (!T_body_cam.empty()) {
+            for (int i = 0; i < 4; i++) {
+                for (int j = 0; j < 4; j++) {
+                    cam2body_(i, j) = T_body_cam.at<double>(i, j);
+                }
+            }
+        } else {
+            std::cerr << "ERROR: Could not load body_T_cam0from config file" << std::endl;
+            exit(-1);
+        }
+        // 行列を反転して cam2body を得る
+        md_.cam2body_ = cam2body_.inverse().eval();
+
         cout << "grid_map/frame_id: " << mp_.frame_id_ << endl;
         cout << "grid_map/enable_virtual_wall: " << mp_.enable_virtual_walll_ << endl;
         cout << "grid_map/pose_type: " << mp_.pose_type_ << endl;
@@ -184,10 +200,10 @@
         md_.proj_points_cnt_ = 0;
         md_.cache_voxel_cnt_ = 0;
 
-        md_.cam2body_ << 1.0, 0.0, 0.0, 0.0,
-                        0.0, 1.0, 0.0, 0.0,
-                        0.0, 0.0, 1.0, 0.0,
-                        0.0, 0.0, 0.0, 1.0;
+        // md_.cam2body_ << 1.0, 0.0, 0.0, 0.0,
+        //                 0.0, 1.0, 0.0, 0.0,
+        //                 0.0, 0.0, 1.0, 0.0,
+        //                 0.0, 0.0, 0.0, 1.0;
     }
 
     void GridMap::updateOccupancyCallback(const ros::TimerEvent & /*event*/)

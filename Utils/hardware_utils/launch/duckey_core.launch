@@ -3,18 +3,18 @@
 	<!-- example launch script for ArduPilot based FCU's -->
 
 	<arg name="fcu_url" default="/dev/ttyTHS1:500000" />
-	<arg name="gcs_url" default="" />
+	<arg name="gcs_url" default="udp://:14555@192.168.0.75:14550" />
 	<arg name="tgt_system" default="1" />
 	<arg name="tgt_component" default="1" />
-	<arg name="log_output" default="log" />
+	<arg name="log_output" default="screen" />
 	<arg name="fcu_protocol" default="v2.0" />
 	<arg name="respawn_mavros" default="false" />
-    <arg name="set_params" default="false" />
-    <arg name="imu_freq" default="200"/>
+    <arg name="set_params" default="true" />
+    <arg name="imu_freq" default="0"/>
     <arg name="pluginlists_yaml" default="$(find agri_resources)/config/mavros/apm_pluginlists.yaml" />
 	<arg name="config_yaml" default="$(find agri_resources)/config/mavros/apm_config.yaml" />
 
-	<!-- <node pkg="mavros" type="mavros_node" name="mavros" required="$(eval not respawn_mavros)" clear_params="true" output="$(arg log_output)" respawn="$(arg respawn_mavros)">
+	<node pkg="mavros" type="mavros_node" name="mavros" required="$(eval not respawn_mavros)" clear_params="true" output="$(arg log_output)" respawn="$(arg respawn_mavros)">
 		<param name="fcu_url" value="$(arg fcu_url)" />
 		<param name="gcs_url" value="$(arg gcs_url)" />
 		<param name="target_system_id" value="$(arg tgt_system)" />
@@ -22,7 +22,7 @@
 		<param name="fcu_protocol" value="$(arg fcu_protocol)" />
 		<rosparam command="load" file="$(arg pluginlists_yaml)" />
 		<rosparam command="load" file="$(arg config_yaml)" />
-	</node> -->
+	</node>
 
     <arg name="serial_no"           default=""/>
     <arg name="usb_port_id"         default=""/>
@@ -41,7 +41,7 @@
 
     <arg name="depth_width"         default="480"/>
     <arg name="depth_height"        default="270"/>
-    <arg name="enable_depth"        default="false"/>
+    <arg name="enable_depth"        default="true"/>
 
     <arg name="infra_width"        default="480"/>
     <arg name="infra_height"       default="270"/>
@@ -56,15 +56,15 @@
     <arg name="depth_fps"           default="15"/>
     <arg name="infra_fps"           default="15"/>
     <arg name="color_fps"           default="15"/>
-    <arg name="gyro_fps"            default="400"/>
-    <arg name="accel_fps"           default="400"/>
+    <arg name="gyro_fps"            default="200"/>
+    <arg name="accel_fps"           default="250"/>
     <arg name="enable_gyro"         default="true"/>
     <arg name="enable_accel"        default="true"/>
 
-    <arg name="enable_pointcloud"         default="false"/>
+    <arg name="enable_pointcloud"         default="true"/>
     <arg name="pointcloud_texture_stream" default="RS2_STREAM_COLOR"/>
     <arg name="pointcloud_texture_index"  default="0"/>
-    <arg name="allow_no_texture_points"   default="false"/>
+    <arg name="allow_no_texture_points"   default="true"/>
     <arg name="ordered_pc"                default="false"/>
 
     <arg name="enable_sync"               default="false"/>
@@ -154,9 +154,9 @@
         /camera/rgb_camera/global_time_enabled: true
     </rosparam>
 
-    <!-- <node pkg="hardware_utils" type="hard_mavros_bridge" name="mavros_bridge" output="screen">
-        <param name="cells_batt" value="2" />
+    <node pkg="hardware_utils" type="hard_mavros_bridge" name="mavros_bridge" output="screen">
+        <param name="cells_batt" value="3" />
         <param name="imu_freq" value="$(arg imu_freq)" />
         <param name="set_params" value="$(arg set_params)" />
-    </node> -->
+    </node>
 </launch>
