@@ -241,7 +241,6 @@
         printf("updateOccupancyCallback(ms): cur t = %lf, avg t = %lf, max t = %lf\n", (t5 - t1).toSec() * 1000, callbacktime / updatetimes * 1000, max_callbacktime * 1000);
         }
     }
-
     md_.occ_need_update_ = false;
     }
 
