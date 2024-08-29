@@ -9,6 +9,7 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~")
     joy_pub_ = nh_.advertise<sensor_msgs::Joy>("/mavros_bridge/joy", 10);
     set_gp_origin_pub_ = nh_.advertise<geographic_msgs::GeoPointStamped>("/mavros/global_position/set_gp_origin", 10);
     battery_pub_ = nh_.advertise<std_msgs::Float32>("/mavros_bridge/battery", 10);
+    vision_pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("/mavros/vision_pose/pose", 10);
 
     pub_temp0_ = nh_.advertise<std_msgs::Float32>("/hardware_bridge/cpu_temperature", 1);
     pub_temp1_ = nh_.advertise<std_msgs::Float32>("/hardware_bridge/gpu_temperature", 1);
@@ -23,6 +24,7 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~")
     state_sub_ = nh_.subscribe("/mavros/state", 1, &MavrosBridge::stateCallback, this);
     // hp_sub_ = nh_.subscribe("/mavros/home_position/home", 1, &MavrosBridge::hpCallback, this);
     battery_sub_ = nh_.subscribe("/mavros/battery", 1, &MavrosBridge::batteryCallback, this);
+    odom_sub_ = nh_.subscribe("/mavros_bridge/odom", 1, &MavrosBridge::odomCallback, this);
 
     thermal_timer_ = nh_.createTimer(ros::Duration(1.0), &MavrosBridge::thermalTimerCallback, this);
 
@@ -107,6 +109,14 @@ void MavrosBridge::batteryCallback(sensor_msgs::BatteryState msg)
     std_msgs::Float32 battery_msg;
     battery_msg.data = battery;
     battery_pub_.publish(battery_msg);
+}
+
+void MavrosBridge::odomCallback(nav_msgs::Odometry msg)
+{
+    geometry_msgs::PoseStamped pose;
+    pose.header = msg.header;
+    pose.pose = msg.pose.pose;
+    vision_pose_pub_.publish(pose);
 }
 
 bool MavrosBridge::checkMove(void)
@@ -198,6 +208,7 @@ void MavrosBridge::setupMavParams()
 
     ros::Duration(3.0).sleep();
 
+    if (imu_freq_ != 0){
     ROS_INFO("Set IMU message rate to %d Hz", imu_freq_);
     mavros_msgs::MessageInterval msg_interval_srv;
     msg_interval_srv.request.message_id = 27;
@@ -206,6 +217,9 @@ void MavrosBridge::setupMavParams()
         ROS_ERROR("Failed to call service /mavros/set_message_interval");
         return;
     }
+    }
+    
+    mavros_msgs::MessageInterval msg_interval_srv;
     ROS_INFO("Set Battery message rate to %d Hz", 5);
     msg_interval_srv.request.message_id = 147;
     msg_interval_srv.request.message_rate = 5;

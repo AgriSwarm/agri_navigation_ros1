@@ -12,9 +12,11 @@
 #include <mavros_msgs/State.h>
 #include <mavros_msgs/HomePosition.h>
 #include <sensor_msgs/Joy.h>
+#include <nav_msgs/Odometry.h>
 #include <std_msgs/Bool.h>
 #include <sensor_msgs/BatteryState.h>
 #include <std_msgs/Float32.h>
+#include <geometry_msgs/PoseStamped.h>
 
 #include <mavros_msgs/ParamPull.h>
 #include <mavros_msgs/ParamSet.h>
@@ -32,6 +34,7 @@ private:
     void stateCallback(mavros_msgs::State msg);
     void hpCallback(mavros_msgs::HomePosition msg);
     void batteryCallback(sensor_msgs::BatteryState msg);
+    void odomCallback(nav_msgs::Odometry msg);
     bool checkMove(void);
     sensor_msgs::Joy convertRCtoJoy(const mavros_msgs::RCIn& msg);
     void initialSetup(void);
@@ -44,12 +47,12 @@ private:
     ros::NodeHandle nh_;
     ros::NodeHandle pnh_;
     ros::Publisher joy_pub_;
-    ros::Publisher battery_pub_;
+    ros::Publisher battery_pub_, vision_pose_pub_;
     ros::Subscriber rc_sub_;
     ros::Subscriber activate_sub_;
     ros::Subscriber state_sub_;
     ros::Subscriber hp_sub_;
-    ros::Subscriber battery_sub_;
+    ros::Subscriber battery_sub_, odom_sub_;
 
     ros::Publisher pub_temp0_;
     ros::Publisher pub_temp1_;
