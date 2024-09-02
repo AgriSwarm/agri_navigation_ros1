@@ -119,7 +119,8 @@
             exit(-1);
         }
         // 行列を反転して cam2body を得る
-        md_.cam2body_ = cam2body_.inverse().eval();
+        // md_.cam2body_ = cam2body_.inverse().eval();
+        md_.cam2body_ = cam2body_;
 
         cout << "grid_map/frame_id: " << mp_.frame_id_ << endl;
         cout << "grid_map/enable_virtual_wall: " << mp_.enable_virtual_walll_ << endl;
@@ -939,7 +940,7 @@
     // if (map_pub_.getNumSubscribers() <= 0)
     //   return;
 
-    Eigen::Vector3d heading = (md_.camera_r_m_ * md_.cam2body_.block<3, 3>(0, 0).transpose()).block<3, 1>(0, 2);
+    Eigen::Vector3d heading = (md_.camera_r_m_ * md_.cam2body_.block<3, 3>(0, 0).transpose()).block<3, 1>(0, 0);
     pcl::PointCloud<pcl::PointXYZ> cloud;
     double lbz = mp_.enable_virtual_walll_ ? max(md_.ringbuffer_lowbound3d_(2), mp_.virtual_ground_) : md_.ringbuffer_lowbound3d_(2);
     double ubz = mp_.enable_virtual_walll_ ? min(md_.ringbuffer_upbound3d_(2), mp_.virtual_ceil_) : md_.ringbuffer_upbound3d_(2);

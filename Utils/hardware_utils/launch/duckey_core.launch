@@ -13,6 +13,7 @@
     <arg name="imu_freq" default="0"/>
     <arg name="pluginlists_yaml" default="$(find agri_resources)/config/mavros/apm_pluginlists.yaml" />
 	<arg name="config_yaml" default="$(find agri_resources)/config/mavros/apm_config.yaml" />
+    <arg name="self_id" default="0"/>
 
 	<node pkg="mavros" type="mavros_node" name="mavros" required="$(eval not respawn_mavros)" clear_params="true" output="$(arg log_output)" respawn="$(arg respawn_mavros)">
 		<param name="fcu_url" value="$(arg fcu_url)" />
@@ -146,9 +147,9 @@
         </include>
     </group>
 
-    <!-- <rosparam> /camera/stereo_module/emitter_enabled: 2</rosparam> -->
+    <rosparam> /camera/stereo_module/emitter_enabled: 2</rosparam>
+    <!-- <rosparam> /camera/stereo_module/emitter_enabled: false</rosparam> -->
     <rosparam>
-        /camera/stereo_module/emitter_enabled: false
         /camera/motion_module/global_time_enabled: true
         /camera/l500_depth_sensor/global_time_enabled: true
         /camera/rgb_camera/global_time_enabled: true
@@ -158,5 +159,6 @@
         <param name="cells_batt" value="3" />
         <param name="imu_freq" value="$(arg imu_freq)" />
         <param name="set_params" value="$(arg set_params)" />
+        <param name="drone_id" value="$(arg self_id)" type="int"/>
     </node>
 </launch>

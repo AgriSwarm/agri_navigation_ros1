@@ -13,12 +13,13 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   tf
   mavros_msgs
+  swarm_msgs
 )
 
 catkin_package(
   INCLUDE_DIRS include
   # LIBRARIES sensor_visualization
-  CATKIN_DEPENDS roscpp
+  CATKIN_DEPENDS roscpp swarm_msgs
 )
 
 include_directories(

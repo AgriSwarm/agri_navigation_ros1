@@ -4,12 +4,14 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~")
 {
     pnh_.param<int>("cells_batt", cells_batt_, 2);
     pnh_.param<int>("imu_freq", imu_freq_, 100);
+    pnh_.param<int>("drone_id", self_id, 0);
     pnh_.param<bool>("set_params", set_params_, false);
 
     joy_pub_ = nh_.advertise<sensor_msgs::Joy>("/mavros_bridge/joy", 10);
     set_gp_origin_pub_ = nh_.advertise<geographic_msgs::GeoPointStamped>("/mavros/global_position/set_gp_origin", 10);
     battery_pub_ = nh_.advertise<std_msgs::Float32>("/mavros_bridge/battery", 10);
     vision_pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("/mavros/vision_pose/pose", 10);
+    status_pub_ = nh_.advertise<swarm_msgs::SystemStatus>("/hardware_bridge/status", 10);
 
     pub_temp0_ = nh_.advertise<std_msgs::Float32>("/hardware_bridge/cpu_temperature", 1);
     pub_temp1_ = nh_.advertise<std_msgs::Float32>("/hardware_bridge/gpu_temperature", 1);
@@ -26,10 +28,19 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~")
     battery_sub_ = nh_.subscribe("/mavros/battery", 1, &MavrosBridge::batteryCallback, this);
     odom_sub_ = nh_.subscribe("/mavros_bridge/odom", 1, &MavrosBridge::odomCallback, this);
 
+    status_sub_ = nh_.subscribe("/hardware_bridge/status", 1, &MavrosBridge::statusCallback, this);
+
     thermal_timer_ = nh_.createTimer(ros::Duration(1.0), &MavrosBridge::thermalTimerCallback, this);
 
     if (set_params_)
         setupMavParams();
+}
+
+void MavrosBridge::statusCallback(const swarm_msgs::SystemStatus msg)
+{
+    if(msg.drone_id != self_id){
+        return;
+    }
 }
 
 void MavrosBridge::thermalTimerCallback(const ros::TimerEvent&)
