@@ -6,6 +6,10 @@
 
         initParams(nh);
 
+        map_pub_ = node_.advertise<sensor_msgs::PointCloud2>("grid_map/occupancy", 10);
+        map_inf_pub_ = node_.advertise<sensor_msgs::PointCloud2>("grid_map/occupancy_inflate", 10);
+        delay_pub_ = node_.advertise<std_msgs::Float32>("grid_map/delay", 10);
+
         /* init callback */
         depth_sub_.reset(new message_filters::Subscriber<sensor_msgs::Image>(node_, "grid_map/depth", 50));
         extrinsic_sub_ = node_.subscribe<nav_msgs::Odometry>(
@@ -40,18 +44,17 @@
         indep_cloud_sub_ =
             node_.subscribe<sensor_msgs::PointCloud2>("grid_map/cloud", 10, &GridMap::cloudCallback, this);
 
-        occ_timer_ = node_.createTimer(ros::Duration(0.032), &GridMap::updateOccupancyCallback, this);
-        vis_timer_ = node_.createTimer(ros::Duration(0.125), &GridMap::visCallback, this);
+        occ_timer_ = node_.createTimer(ros::Duration(mp_.occ_interval_), &GridMap::updateOccupancyCallback, this);
+        vis_timer_ = node_.createTimer(ros::Duration(mp_.vis_interval_), &GridMap::visCallback, this);
         if (mp_.fading_time_ > 0)
             fading_timer_ = node_.createTimer(ros::Duration(0.5), &GridMap::fadingCallback, this);
-
-        map_pub_ = node_.advertise<sensor_msgs::PointCloud2>("grid_map/occupancy", 10);
-        map_inf_pub_ = node_.advertise<sensor_msgs::PointCloud2>("grid_map/occupancy_inflate", 10);
 
         md_.occ_need_update_ = false;
         md_.has_first_depth_ = false;
         md_.has_odom_ = false;
         md_.last_occ_update_time_.fromSec(0);
+        md_.depth_stamp_ = ros::Time::now().toSec();
+        md_.last_depth_stamp_ = ros::Time::now().toSec();
 
         md_.flag_have_ever_received_depth_ = false;
         md_.flag_depth_odom_timeout_ = false;
@@ -105,6 +108,9 @@
         mp_.min_ray_length_ = (double)fsSettings["grid_map"]["min_ray_length"];
         mp_.show_occ_time_ = ((int)fsSettings["grid_map"]["show_occ_time"]) != 0;
 
+        mp_.occ_interval_ = (double)fsSettings["grid_map"]["occ_interval"];
+        mp_.vis_interval_ = (double)fsSettings["grid_map"]["vis_interval"];
+
         Eigen::Matrix4d cam2body_ = Eigen::Matrix4d::Identity();
         cv::Mat T_body_cam;
         fsSettings["grid_map"]["body_T_cam"] >> T_body_cam;
@@ -154,6 +160,8 @@
         cout << "grid_map/fading_time: " << mp_.fading_time_ << endl;
         cout << "grid_map/min_ray_length: " << mp_.min_ray_length_ << endl;
         cout << "grid_map/show_occ_time: " << mp_.show_occ_time_ << endl;
+        cout << "grid_map/occ_interval: " << mp_.occ_interval_ << endl;
+        cout << "grid_map/vis_interval: " << mp_.vis_interval_ << endl;
         
         mp_.inf_grid_ = ceil((mp_.obstacles_inflation_ - 1e-5) / mp_.resolution_);
         if (mp_.inf_grid_ > 4)
@@ -266,6 +274,7 @@
     if (!mp_.have_initialized_)
         return;
 
+    double last_depth_stamp_ = md_.last_depth_stamp_;
     ros::Time t0 = ros::Time::now();
     publishMapInflate();
     publishMap();
@@ -275,6 +284,10 @@
     {
         printf("Visualization(ms):%f\n", (t1 - t0).toSec() * 1000);
     }
+    double delay = (t1.toSec() - last_depth_stamp_)*1000;
+    std_msgs::Float32 msg;
+    msg.data = delay;
+    delay_pub_.publish(msg);
     }
 
     void GridMap::fadingCallback(const ros::TimerEvent & /*event*/)
@@ -329,6 +342,7 @@
         (cv_ptr->image).convertTo(cv_ptr->image, CV_16UC1, mp_.k_depth_scaling_factor_);
     }
     cv_ptr->image.copyTo(md_.depth_image_);
+    md_.depth_stamp_ = img->header.stamp.toSec();
 
     static bool first_flag = true;
     if (first_flag)
@@ -384,6 +398,7 @@
         (cv_ptr->image).convertTo(cv_ptr->image, CV_16UC1, mp_.k_depth_scaling_factor_);
     }
     cv_ptr->image.copyTo(md_.depth_image_);
+    md_.depth_stamp_ = img->header.stamp.toSec();
 
     static bool first_flag = true;
     if (first_flag)
@@ -671,6 +686,7 @@
     md_.last_camera_pos_ = md_.camera_pos_;
     md_.last_camera_r_m_ = md_.camera_r_m_;
     md_.last_depth_image_ = md_.depth_image_;
+    md_.last_depth_stamp_ = md_.depth_stamp_;
     }
 
     void GridMap::raycastProcess()
