@@ -12,6 +12,7 @@
 #include <ros/ros.h>
 #include <tuple>
 #include <visualization_msgs/Marker.h>
+#include <std_msgs/Float32.h>
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -46,6 +47,7 @@ struct MappingParameters
   int pose_type_;
   bool enable_virtual_walll_;
   double virtual_ceil_, virtual_ground_;
+  double occ_interval_, vis_interval_;
 
   /* camera parameters */
   double cx_, cy_, fx_, fy_;
@@ -107,6 +109,7 @@ struct MappingData
   // depth image data
 
   cv::Mat depth_image_, last_depth_image_;
+  double depth_stamp_, last_depth_stamp_;
 
   // flags of map state
 
@@ -227,7 +230,7 @@ private:
   SynchronizerImageOdom sync_image_odom_;
 
   ros::Subscriber indep_cloud_sub_, indep_odom_sub_, extrinsic_sub_, only_pose_sub_, only_depth_sub_;
-  ros::Publisher map_pub_, map_inf_pub_;
+  ros::Publisher map_pub_, map_inf_pub_, delay_pub_;
   ros::Timer occ_timer_, vis_timer_, fading_timer_;
 
   //
