@@ -72,6 +72,7 @@ private:
     ros::ServiceClient arm_client_;
     ros::ServiceClient set_msg_rate_group_client_;
     ros::ServiceClient set_msg_rate_client_;
+    ros::ServiceClient get_param_client_, set_param_client_;
 
     mavros_msgs::State last_state_;
     bool hp_valid_{ false };
