@@ -43,9 +43,13 @@ private:
     void initialSetup(void);
     bool activate(bool activate);
 
-    void setupMavParams();
+    void setupStreamRate();
     void thermalTimerCallback(const ros::TimerEvent& event);
+    void vioAlignTimerCallback(const ros::TimerEvent& event);
     void publishTemp(const std::string& file_path, ros::Publisher& publisher);
+
+    std::tuple<bool, int, float> getParam(const std::string& param);
+    std::tuple<bool, int, float> setParam(const std::string& param, int value_integer, float value_real);
 
     ros::NodeHandle nh_;
     ros::NodeHandle pnh_;
@@ -59,7 +63,7 @@ private:
 
     ros::Publisher pub_temp0_;
     ros::Publisher pub_temp1_;
-    ros::Timer thermal_timer_;
+    ros::Timer thermal_timer_, vio_align_timer_;
 
     ros::Publisher set_gp_origin_pub_;
     ros::ServiceClient mode_client_;
@@ -74,6 +78,7 @@ private:
     int cells_batt_{ 0 };
     int imu_freq_{ 0 };
     int self_id{ 0 };
+    float vio_align_interval_{ 1.0 };
 };
 
 #endif // HARD_MAVROS_BRIDGE_H

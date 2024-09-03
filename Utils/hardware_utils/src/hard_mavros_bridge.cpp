@@ -6,6 +6,7 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~")
     pnh_.param<int>("imu_freq", imu_freq_, 100);
     pnh_.param<int>("drone_id", self_id, 0);
     pnh_.param<bool>("set_params", set_params_, false);
+    pnh_.param<float>("vio_align_interval", vio_align_interval_, 1.0);
 
     joy_pub_ = nh_.advertise<sensor_msgs::Joy>("/mavros_bridge/joy", 10);
     set_gp_origin_pub_ = nh_.advertise<geographic_msgs::GeoPointStamped>("/mavros/global_position/set_gp_origin", 10);
@@ -18,6 +19,8 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~")
 
     mode_client_ = nh_.serviceClient<mavros_msgs::SetMode>("/mavros/set_mode");
     arm_client_ = nh_.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/arming");
+    get_param_client_ = nh_.serviceClient<mavros_msgs::ParamGet>("/mavros/param/get");
+    set_param_client_ = nh_.serviceClient<mavros_msgs::ParamSet>("/mavros/param/set");
     set_msg_rate_group_client_ = nh_.serviceClient<mavros_msgs::StreamRate>("/mavros/set_stream_rate");
     set_msg_rate_client_ = nh_.serviceClient<mavros_msgs::MessageInterval>("/mavros/set_message_interval");
 
@@ -31,9 +34,59 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~")
     status_sub_ = nh_.subscribe("/hardware_bridge/status", 1, &MavrosBridge::statusCallback, this);
 
     thermal_timer_ = nh_.createTimer(ros::Duration(1.0), &MavrosBridge::thermalTimerCallback, this);
+    vio_align_timer_ = nh_.createTimer(ros::Duration(vio_align_interval_), &MavrosBridge::vioAlignTimerCallback, this);
 
     if (set_params_)
-        setupMavParams();
+        setupStreamRate();
+}
+
+// void MavrosBridge::getParam(const std::string& param_id)
+// {
+//     mavros_msgs::ParamGet param_get;
+//     param_get.request.param_id = param_id;
+//     if (get_param_client_.call(param_get))
+//     {
+//         ROS_INFO("Got param %s: %f", param_id.c_str(), param_get.response.value.real);
+//     }
+//     else
+//     {
+//         ROS_ERROR("Failed to call service /mavros/param/get");
+//     }
+// }
+
+void MavrosBridge::vioAlignTimerCallback(const ros::TimerEvent& event)
+{
+    std::tuple<bool, int, float> param = setParam("80", 2, 0.0f);
+}
+
+std::tuple<bool, int, float> MavrosBridge::getParam(const std::string& param) {
+    mavros_msgs::ParamGet srv;
+    srv.request.param_id = param;
+
+    if (get_param_client_.call(srv)) {
+        return std::make_tuple(srv.response.success, 
+                                srv.response.value.integer, 
+                                srv.response.value.real);
+    } else {
+        ROS_ERROR("Failed to call service ParamGet");
+        return std::make_tuple(false, 0, 0.0f);
+    }
+}
+
+std::tuple<bool, int, float> setParam(const std::string& param, int value_integer, float value_real) {
+    mavros_msgs::ParamSet srv;
+    srv.request.param_id = param;
+    srv.request.value.integer = value_integer;
+    srv.request.value.real = value_real;
+
+    if (set_param_client_.call(srv)) {
+        return std::make_tuple(srv.response.success, 
+                                srv.response.value.integer, 
+                                srv.response.value.real);
+    } else {
+        ROS_ERROR("Failed to call service ParamSet");
+        return std::make_tuple(false, 0, 0.0f);
+    }
 }
 
 void MavrosBridge::statusCallback(const swarm_msgs::SystemStatus msg)
@@ -190,7 +243,7 @@ bool MavrosBridge::activate(bool activate)
     return true;
 }
 
-void MavrosBridge::setupMavParams()
+void MavrosBridge::setupStreamRate()
 {
     ros::NodeHandle nh;
     ros::Rate rate(1);
@@ -233,6 +286,15 @@ void MavrosBridge::setupMavParams()
     mavros_msgs::MessageInterval msg_interval_srv;
     ROS_INFO("Set Battery message rate to %d Hz", 5);
     msg_interval_srv.request.message_id = 147;
+    msg_interval_srv.request.message_rate = 5;
+    if (!set_msg_rate_client_.call(msg_interval_srv)) {
+        ROS_ERROR("Failed to call service /mavros/set_message_interval");
+        return;
+    }
+
+    mavros_msgs::MessageInterval msg_interval_srv;
+    ROS_INFO("Set Local Position message rate to %d Hz", 5);
+    msg_interval_srv.request.message_id = 32;
     msg_interval_srv.request.message_rate = 5;
     if (!set_msg_rate_client_.call(msg_interval_srv)) {
         ROS_ERROR("Failed to call service /mavros/set_message_interval");
