@@ -23,6 +23,8 @@
 #include <mavros_msgs/MessageInterval.h>
 #include <mavros_msgs/StreamRate.h>
 
+#include <swarm_msgs/SystemStatus.h>
+
 class MavrosBridge
 {
 public:
@@ -35,6 +37,7 @@ private:
     void hpCallback(mavros_msgs::HomePosition msg);
     void batteryCallback(sensor_msgs::BatteryState msg);
     void odomCallback(nav_msgs::Odometry msg);
+    void statusCallback(swarm_msgs::SystemStatus msg);
     bool checkMove(void);
     sensor_msgs::Joy convertRCtoJoy(const mavros_msgs::RCIn& msg);
     void initialSetup(void);
@@ -47,12 +50,12 @@ private:
     ros::NodeHandle nh_;
     ros::NodeHandle pnh_;
     ros::Publisher joy_pub_;
-    ros::Publisher battery_pub_, vision_pose_pub_;
+    ros::Publisher battery_pub_, vision_pose_pub_, status_pub_;
     ros::Subscriber rc_sub_;
     ros::Subscriber activate_sub_;
     ros::Subscriber state_sub_;
     ros::Subscriber hp_sub_;
-    ros::Subscriber battery_sub_, odom_sub_;
+    ros::Subscriber battery_sub_, odom_sub_, status_sub_;
 
     ros::Publisher pub_temp0_;
     ros::Publisher pub_temp1_;
@@ -70,6 +73,7 @@ private:
     bool set_params_{ false };
     int cells_batt_{ 0 };
     int imu_freq_{ 0 };
+    int self_id{ 0 };
 };
 
 #endif // HARD_MAVROS_BRIDGE_H

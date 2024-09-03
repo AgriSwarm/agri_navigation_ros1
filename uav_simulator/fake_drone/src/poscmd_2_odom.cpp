@@ -61,10 +61,10 @@ void pubOdom()
 	    odom.pose.pose.position.y = _init_y;
 	    odom.pose.pose.position.z = _init_z;
 
-	    odom.pose.pose.orientation.w = 0.5;
-	    odom.pose.pose.orientation.x = 0.5;
-	    odom.pose.pose.orientation.y = 0.5;
-	    odom.pose.pose.orientation.z = 0.5;
+	    odom.pose.pose.orientation.w = 1.0;
+	    odom.pose.pose.orientation.x = 0.0;
+	    odom.pose.pose.orientation.y = 0.0;
+	    odom.pose.pose.orientation.z = 0.0;
 
 	    odom.twist.twist.linear.x = 0.0;
 	    odom.twist.twist.linear.y = 0.0;
