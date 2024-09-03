@@ -73,7 +73,7 @@ std::tuple<bool, int, float> MavrosBridge::getParam(const std::string& param) {
     }
 }
 
-std::tuple<bool, int, float> setParam(const std::string& param, int value_integer, float value_real) {
+std::tuple<bool, int, float> MavrosBridge::setParam(const std::string& param, int value_integer, float value_real) {
     mavros_msgs::ParamSet srv;
     srv.request.param_id = param;
     srv.request.value.integer = value_integer;
@@ -272,9 +272,10 @@ void MavrosBridge::setupStreamRate()
 
     ros::Duration(3.0).sleep();
 
+    mavros_msgs::MessageInterval msg_interval_srv;
+
     if (imu_freq_ != 0){
     ROS_INFO("Set IMU message rate to %d Hz", imu_freq_);
-    mavros_msgs::MessageInterval msg_interval_srv;
     msg_interval_srv.request.message_id = 27;
     msg_interval_srv.request.message_rate = imu_freq_;
     if (!set_msg_rate_client_.call(msg_interval_srv)) {
@@ -283,7 +284,7 @@ void MavrosBridge::setupStreamRate()
     }
     }
     
-    mavros_msgs::MessageInterval msg_interval_srv;
+    // mavros_msgs::MessageInterval msg_interval_srv;
     ROS_INFO("Set Battery message rate to %d Hz", 5);
     msg_interval_srv.request.message_id = 147;
     msg_interval_srv.request.message_rate = 5;
@@ -292,7 +293,7 @@ void MavrosBridge::setupStreamRate()
         return;
     }
 
-    mavros_msgs::MessageInterval msg_interval_srv;
+    // mavros_msgs::MessageInterval msg_interval_srv;
     ROS_INFO("Set Local Position message rate to %d Hz", 5);
     msg_interval_srv.request.message_id = 32;
     msg_interval_srv.request.message_rate = 5;
