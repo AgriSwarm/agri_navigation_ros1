@@ -11,6 +11,8 @@
 #include <geographic_msgs/GeoPointStamped.h>
 #include <mavros_msgs/State.h>
 #include <mavros_msgs/HomePosition.h>
+#include <mavros_msgs/ParamGet.h>
+#include <mavros_msgs/ParamSet.h>
 #include <sensor_msgs/Joy.h>
 #include <nav_msgs/Odometry.h>
 #include <std_msgs/Bool.h>
