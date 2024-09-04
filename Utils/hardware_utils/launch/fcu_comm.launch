@@ -1,0 +1,42 @@
+<launch>
+	<!-- vim: set ft=xml noet : -->
+	<!-- example launch script for ArduPilot based FCU's -->
+
+	<!-- MAVROS Node -->
+    <arg name="fcu_url" default="/dev/ttyACM0:57600" />
+    <arg name="gcs_url" default="" />
+    <arg name="tgt_system" default="1" />
+    <arg name="tgt_component" default="1" />
+    <arg name="log_output" default="screen" />
+    <arg name="fcu_protocol" default="v2.0" />
+    <arg name="respawn_mavros" default="false" />
+    <arg name="set_params" default="true" />
+    <arg name="imu_freq" default="0"/>
+    <arg name="pluginlists_yaml" default="$(find agri_resources)/config/mavros/apm_pluginlists.yaml" />
+    <arg name="config_yaml" default="$(find agri_resources)/config/mavros/apm_config.yaml" />
+    <arg name="self_id" default="0"/>
+
+    <node pkg="mavros" type="mavros_node" name="mavros" required="$(eval not respawn_mavros)" clear_params="true" output="$(arg log_output)" respawn="$(arg respawn_mavros)">
+        <param name="fcu_url" value="$(arg fcu_url)" />
+        <param name="gcs_url" value="$(arg gcs_url)" />
+        <param name="target_system_id" value="$(arg tgt_system)" />
+        <param name="target_component_id" value="$(arg tgt_component)" />
+        <param name="fcu_protocol" value="$(arg fcu_protocol)" />
+        <rosparam command="load" file="$(arg pluginlists_yaml)" />
+        <rosparam command="load" file="$(arg config_yaml)" />
+    </node>
+
+    <!-- External Pose Test Node -->
+    <node pkg="hardware_utils" type="external_nav_test.py" name="external_nav_test" output="screen"/>
+
+    <node pkg="hardware_utils" type="hard_mavros_bridge" name="mavros_bridge" output="screen">
+        <param name="cells_batt" value="3" />
+        <param name="imu_freq" value="$(arg imu_freq)" />
+        <param name="set_params" value="$(arg set_params)" />
+        <param name="drone_id" value="$(arg self_id)" type="int"/>
+        <param name="vio_align_interval" value="1000.0" />
+        <param name="infra_freq" value="100" />
+    </node>
+
+    <node name="rvizvisualisation" pkg="rviz" type="rviz" output="log" args="-d $(find agri_resources)/rviz/external_nav.rviz" />
+</launch>
