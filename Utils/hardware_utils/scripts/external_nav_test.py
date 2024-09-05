@@ -10,7 +10,7 @@ from nav_msgs.msg import Odometry
 def circle_trajectory():
     rospy.init_node('external_nav_node', anonymous=True)
     odom_pub = rospy.Publisher('/mavros_bridge/odom', Odometry, queue_size=10)
-    rate = rospy.Rate(5)  # 30Hz
+    rate = rospy.Rate(30)  # 30Hz
 
     # pose = PoseStamped()
     # pose.header.frame_id = "world"
