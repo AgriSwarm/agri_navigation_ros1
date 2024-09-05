@@ -79,13 +79,6 @@ private:
     typedef message_filters::sync_policies::ApproximateTime<geometry_msgs::PoseStamped, sensor_msgs::Imu> SyncPolicyPoseImu;
     std::shared_ptr<message_filters::Synchronizer<SyncPolicyPoseImu>> sync_pose_imu_;
 
-    // message_filters::Subscriber<geometry_msgs::PoseStamped> pose_sub_;
-    // message_filters::Subscriber<sensor_msgs::Imu> imu_sub_;
-    std::shared_ptr<message_filters::Subscriber<geometry_msgs::PoseStamped>> pose_sub_;
-    std::shared_ptr<message_filters::Subscriber<sensor_msgs::Imu>> imu_sub_;
-    typedef message_filters::sync_policies::ApproximateTime<geometry_msgs::PoseStamped, sensor_msgs::Imu> SyncPolicyPoseImu;
-    std::shared_ptr<message_filters::Synchronizer<SyncPolicyPoseImu>> sync_pose_imu_;
-
     ros::Publisher pub_temp0_;
     ros::Publisher pub_temp1_;
     ros::Timer thermal_timer_, vio_align_timer_;

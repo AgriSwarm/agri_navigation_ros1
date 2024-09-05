@@ -201,6 +201,7 @@ void MavrosBridge::odomCallback(nav_msgs::Odometry msg)
     vision_pose_pub_.publish(pose);
 
     if(!nav_initialized_){
+        ROS_INFO("Nav initialized");
         nav_initialized_ = true;
     }
 }
@@ -251,9 +252,19 @@ void MavrosBridge::initialSetup(void)
 
 bool MavrosBridge::activate(bool activate)
 {
-    if (!nav_initialized_ || !ap_initialized_)
+    // if (!nav_initialized_ || !ap_initialized_)
+    // {
+    //     ROS_ERROR("AP or Nav not initialized");
+    //     return false;
+    // }
+    if(!ap_initialized_)
     {
-        ROS_ERROR("AP or Nav not initialized");
+        ROS_ERROR("AP not initialized");
+        return false;
+    }
+    if(!nav_initialized_)
+    {
+        ROS_ERROR("Nav not initialized");
         return false;
     }
     

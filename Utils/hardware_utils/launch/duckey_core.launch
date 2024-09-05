@@ -3,12 +3,8 @@
 	<!-- example launch script for ArduPilot based FCU's -->
 
 	<arg name="fcu_url" default="/dev/ttyTHS1:500000" />
-<<<<<<< HEAD
-	<arg name="gcs_url" default="" />
-=======
 	<!-- <arg name="gcs_url" default="udp://:14555@192.168.0.75:14550" /> -->
     <arg name="gcs_url" default="" />
->>>>>>> 42b3dd36e70f91738d4fbe89eceddc64ea0a5429
 	<arg name="tgt_system" default="1" />
 	<arg name="tgt_component" default="1" />
 	<arg name="log_output" default="screen" />
@@ -52,8 +48,8 @@
 
     <arg name="infra_width"        default="480"/>
     <arg name="infra_height"       default="270"/>
-    <arg name="enable_infra1"       default="false"/>
-    <arg name="enable_infra2"       default="false"/>
+    <arg name="enable_infra1"       default="true"/>
+    <arg name="enable_infra2"       default="true"/>
 
     <arg name="color_width"         default="640"/>
     <arg name="color_height"        default="480"/>
@@ -162,17 +158,15 @@
     </rosparam>
 
     <node pkg="hardware_utils" type="hard_mavros_bridge" name="mavros_bridge" output="screen">
+        <remap from="/mavros_bridge/odom" to="/d2vins/odometry"/>
         <param name="cells_batt" value="3" />
         <param name="imu_freq" value="$(arg imu_freq)" />
         <param name="set_params" value="$(arg set_params)" />
         <param name="drone_id" value="$(arg self_id)" type="int"/>
         <param name="vio_align_interval" value="1000000.0" />
     </node>
-<<<<<<< HEAD
-</launch>
-=======
 
-    <node pkg="rosbag" type="record" name="rosbag_record"
+    <!-- <node pkg="rosbag" type="record" name="rosbag_flight_record"
         args="record -o /tmp/flight_record 
             /mavros/imu/data_raw
             /camera/depth/color/points
@@ -181,10 +175,9 @@
             /camera/infra2/image_rect_raw"
         if="$(arg rosbag)"/> 
 
-    <node pkg="rosbag" type="record" name="rosbag_record"
+    <node pkg="rosbag" type="record" name="rosbag_nav_record"
         args="record -o /tmp/nav_record 
             /mavros/local_position/odom
             /mavros/vision_pose/pose" 
-        if="$(arg rosbag)"/> 
+        if="$(arg rosbag)"/>  -->
 </launch>
->>>>>>> 42b3dd36e70f91738d4fbe89eceddc64ea0a5429
