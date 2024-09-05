@@ -3,7 +3,11 @@
 	<!-- example launch script for ArduPilot based FCU's -->
 
 	<!-- MAVROS Node -->
+<<<<<<< HEAD
+    <arg name="fcu_url" default="/dev/ttyTHS1:500000" />
+=======
     <arg name="fcu_url" default="/dev/ttyACM0:57600" />
+>>>>>>> 42b3dd36e70f91738d4fbe89eceddc64ea0a5429
     <arg name="gcs_url" default="" />
     <arg name="tgt_system" default="1" />
     <arg name="tgt_component" default="1" />
@@ -27,7 +31,13 @@
     </node>
 
     <!-- External Pose Test Node -->
+<<<<<<< HEAD
+    <node pkg="hardware_utils" type="external_nav_test.py" name="external_nav_test" output="screen">
+        <!-- ここにノードのパラメータがある場合は追加できます -->
+    </node>
+=======
     <node pkg="hardware_utils" type="external_nav_test.py" name="external_nav_test" output="screen"/>
+>>>>>>> 42b3dd36e70f91738d4fbe89eceddc64ea0a5429
 
     <node pkg="hardware_utils" type="hard_mavros_bridge" name="mavros_bridge" output="screen">
         <param name="cells_batt" value="3" />
