@@ -145,18 +145,19 @@ void MavrosBridge::rcCallback(mavros_msgs::RCIn msg)
     joy_pub_.publish(joy);
 }
 
-// void MavrosBridge::activateCallback(std_msgs::Bool msg)
-// {
-//     ROS_INFO("activate %u", msg.data);
-//     activate(msg.data);
-// }
-
 bool MavrosBridge::activateCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res)
 {
     ROS_INFO("activate %u", req.data);
     res.success = activate(req.data);
     return true;
 }
+
+// bool MavrosBridge::deactivateCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res)
+// {
+//     ROS_INFO("deactivate %u", req.data);
+//     res.success = activate(!req.data);
+//     return true;
+// }
 
 void MavrosBridge::stateCallback(mavros_msgs::State msg)
 {
@@ -260,12 +261,20 @@ bool MavrosBridge::activate(bool activate)
     mavros_msgs::SetMode mode;
     mode.request.base_mode = 0;
     mode.request.custom_mode = "GUIDED";
-    mode_client_.call(mode);
+    if (!mode_client_.call(mode))
+    {
+        ROS_ERROR("Failed to set GUIDED");
+        return false;
+    }
 
     ROS_INFO("set %s", activate ? "arm" : "disarm");
     mavros_msgs::CommandBool cmd;
     cmd.request.value = activate;
-    arm_client_.call(cmd);
+    if (!arm_client_.call(cmd))
+    {
+        ROS_ERROR("Failed to %s", activate ? "arm" : "disarm");
+        return false;
+    }
 
     if (activate)
     {
