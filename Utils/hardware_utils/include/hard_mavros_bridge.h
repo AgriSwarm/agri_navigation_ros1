@@ -26,6 +26,10 @@
 #include <mavros_msgs/StreamRate.h>
 
 #include <swarm_msgs/SystemStatus.h>
+#include <sensor_msgs/Imu.h>
+#include <message_filters/subscriber.h>
+#include <message_filters/synchronizer.h>
+#include <message_filters/sync_policies/approximate_time.h>
 
 class MavrosBridge
 {
@@ -40,6 +44,7 @@ private:
     void batteryCallback(sensor_msgs::BatteryState msg);
     void odomCallback(nav_msgs::Odometry msg);
     void statusCallback(swarm_msgs::SystemStatus msg);
+    void poseImuCallback(const geometry_msgs::PoseStampedConstPtr& pose, const sensor_msgs::ImuConstPtr& imu);
     bool checkMove(void);
     sensor_msgs::Joy convertRCtoJoy(const mavros_msgs::RCIn& msg);
     void initialSetup(void);
@@ -63,11 +68,18 @@ private:
     ros::Subscriber hp_sub_;
     ros::Subscriber battery_sub_, odom_sub_, status_sub_;
 
+    // message_filters::Subscriber<geometry_msgs::PoseStamped> pose_sub_;
+    // message_filters::Subscriber<sensor_msgs::Imu> imu_sub_;
+    std::shared_ptr<message_filters::Subscriber<geometry_msgs::PoseStamped>> pose_sub_;
+    std::shared_ptr<message_filters::Subscriber<sensor_msgs::Imu>> imu_sub_;
+    typedef message_filters::sync_policies::ApproximateTime<geometry_msgs::PoseStamped, sensor_msgs::Imu> SyncPolicyPoseImu;
+    std::shared_ptr<message_filters::Synchronizer<SyncPolicyPoseImu>> sync_pose_imu_;
+
     ros::Publisher pub_temp0_;
     ros::Publisher pub_temp1_;
     ros::Timer thermal_timer_, vio_align_timer_;
 
-    ros::Publisher set_gp_origin_pub_;
+    ros::Publisher set_gp_origin_pub_, odom_pub_;
     ros::ServiceClient mode_client_;
     ros::ServiceClient arm_client_;
     ros::ServiceClient set_msg_rate_group_client_;
@@ -80,6 +92,7 @@ private:
     bool set_params_{ false };
     int cells_batt_{ 0 };
     int imu_freq_{ 0 };
+    int infra_freq_{ 0 };
     int self_id{ 0 };
     float vio_align_interval_{ 1.0 };
 };

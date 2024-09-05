@@ -35,5 +35,6 @@ target_link_libraries(hard_mavros_bridge
 
 catkin_install_python(PROGRAMS
   scripts/mavparam.py
+  scripts/external_nav_test.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

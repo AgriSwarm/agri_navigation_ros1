@@ -4,6 +4,7 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~")
 {
     pnh_.param<int>("cells_batt", cells_batt_, 2);
     pnh_.param<int>("imu_freq", imu_freq_, 100);
+    pnh_.param<int>("infra_freq", infra_freq_, 5);
     pnh_.param<int>("drone_id", self_id, 0);
     pnh_.param<bool>("set_params", set_params_, false);
     pnh_.param<float>("vio_align_interval", vio_align_interval_, 1.0);
@@ -13,6 +14,7 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~")
     battery_pub_ = nh_.advertise<std_msgs::Float32>("/mavros_bridge/battery", 10);
     vision_pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("/mavros/vision_pose/pose", 10);
     status_pub_ = nh_.advertise<swarm_msgs::SystemStatus>("/hardware_bridge/status", 10);
+    odom_pub_ = nh_.advertise<nav_msgs::Odometry>("/mavros_bridge/ap_odom", 10);
 
     pub_temp0_ = nh_.advertise<std_msgs::Float32>("/hardware_bridge/cpu_temperature", 1);
     pub_temp1_ = nh_.advertise<std_msgs::Float32>("/hardware_bridge/gpu_temperature", 1);
@@ -33,6 +35,11 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~")
 
     status_sub_ = nh_.subscribe("/hardware_bridge/status", 1, &MavrosBridge::statusCallback, this);
 
+    pose_sub_.reset(new message_filters::Subscriber<geometry_msgs::PoseStamped>(nh_, "/mavros/local_position/pose", 1));
+    imu_sub_.reset(new message_filters::Subscriber<sensor_msgs::Imu>(nh_, "/mavros/imu/data", 1));
+    sync_pose_imu_.reset(new message_filters::Synchronizer<SyncPolicyPoseImu>(SyncPolicyPoseImu(10), *pose_sub_, *imu_sub_));
+    sync_pose_imu_->registerCallback(boost::bind(&MavrosBridge::poseImuCallback, this, _1, _2));
+
     thermal_timer_ = nh_.createTimer(ros::Duration(1.0), &MavrosBridge::thermalTimerCallback, this);
     vio_align_timer_ = nh_.createTimer(ros::Duration(vio_align_interval_), &MavrosBridge::vioAlignTimerCallback, this);
 
@@ -40,19 +47,20 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~")
         setupStreamRate();
 }
 
-// void MavrosBridge::getParam(const std::string& param_id)
-// {
-//     mavros_msgs::ParamGet param_get;
-//     param_get.request.param_id = param_id;
-//     if (get_param_client_.call(param_get))
-//     {
-//         ROS_INFO("Got param %s: %f", param_id.c_str(), param_get.response.value.real);
-//     }
-//     else
-//     {
-//         ROS_ERROR("Failed to call service /mavros/param/get");
-//     }
-// }
+void MavrosBridge::poseImuCallback(const geometry_msgs::PoseStampedConstPtr& pose, const sensor_msgs::ImuConstPtr& imu)
+{
+    nav_msgs::Odometry odom;
+    odom.header = pose->header;
+    odom.pose.pose.position = pose->pose.position;
+    odom.pose.pose.orientation = imu->orientation;
+    odom.twist.twist.linear.x = imu->linear_acceleration.x;
+    odom.twist.twist.linear.y = imu->linear_acceleration.y;
+    odom.twist.twist.linear.z = imu->linear_acceleration.z;
+    odom.twist.twist.angular.x = imu->angular_velocity.x;
+    odom.twist.twist.angular.y = imu->angular_velocity.y;
+    odom.twist.twist.angular.z = imu->angular_velocity.z;
+    odom_pub_.publish(odom);
+}
 
 void MavrosBridge::vioAlignTimerCallback(const ros::TimerEvent& event)
 {
@@ -287,7 +295,7 @@ void MavrosBridge::setupStreamRate()
     // mavros_msgs::MessageInterval msg_interval_srv;
     ROS_INFO("Set Battery message rate to %d Hz", 5);
     msg_interval_srv.request.message_id = 147;
-    msg_interval_srv.request.message_rate = 5;
+    msg_interval_srv.request.message_rate = infra_freq_;
     if (!set_msg_rate_client_.call(msg_interval_srv)) {
         ROS_ERROR("Failed to call service /mavros/set_message_interval");
         return;
@@ -296,7 +304,23 @@ void MavrosBridge::setupStreamRate()
     // mavros_msgs::MessageInterval msg_interval_srv;
     ROS_INFO("Set Local Position message rate to %d Hz", 5);
     msg_interval_srv.request.message_id = 32;
-    msg_interval_srv.request.message_rate = 5;
+    msg_interval_srv.request.message_rate = infra_freq_;
+    if (!set_msg_rate_client_.call(msg_interval_srv)) {
+        ROS_ERROR("Failed to call service /mavros/set_message_interval");
+        return;
+    }
+
+    ROS_INFO("Set Attitude message rate to %d Hz", 5);
+    msg_interval_srv.request.message_id = 30;
+    msg_interval_srv.request.message_rate = infra_freq_;
+    if (!set_msg_rate_client_.call(msg_interval_srv)) {
+        ROS_ERROR("Failed to call service /mavros/set_message_interval");
+        return;
+    }
+
+    ROS_INFO("Set Attitude Quaternion message rate to %d Hz", 5);
+    msg_interval_srv.request.message_id = 31;
+    msg_interval_srv.request.message_rate = infra_freq_;
     if (!set_msg_rate_client_.call(msg_interval_srv)) {
         ROS_ERROR("Failed to call service /mavros/set_message_interval");
         return;
