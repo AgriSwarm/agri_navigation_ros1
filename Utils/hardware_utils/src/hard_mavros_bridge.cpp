@@ -15,6 +15,8 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~")
     vision_pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("/mavros/vision_pose/pose", 10);
     status_pub_ = nh_.advertise<swarm_msgs::SystemStatus>("/hardware_bridge/status", 10);
     odom_pub_ = nh_.advertise<nav_msgs::Odometry>("/mavros_bridge/ap_odom", 10);
+    setpoint_pos_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("/mavros/setpoint_position/local", 10);
+    setpoint_raw_pub_ = nh_.advertise<mavros_msgs::PositionTarget>("/mavros/setpoint_raw/local", 10);
 
     pub_temp0_ = nh_.advertise<std_msgs::Float32>("/hardware_bridge/cpu_temperature", 1);
     pub_temp1_ = nh_.advertise<std_msgs::Float32>("/hardware_bridge/gpu_temperature", 1);
@@ -33,8 +35,8 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~")
     // hp_sub_ = nh_.subscribe("/mavros/home_position/home", 1, &MavrosBridge::hpCallback, this);
     battery_sub_ = nh_.subscribe("/mavros/battery", 1, &MavrosBridge::batteryCallback, this);
     odom_sub_ = nh_.subscribe("/mavros_bridge/odom", 1, &MavrosBridge::odomCallback, this);
-
     status_sub_ = nh_.subscribe("/hardware_bridge/status", 1, &MavrosBridge::statusCallback, this);
+    takeoff_srv_ = nh_.advertiseService("/mavros_bridge/takeoff", &MavrosBridge::takeoffCallback, this);
 
     pose_sub_.reset(new message_filters::Subscriber<geometry_msgs::PoseStamped>(nh_, "/mavros/local_position/pose", 1));
     imu_sub_.reset(new message_filters::Subscriber<sensor_msgs::Imu>(nh_, "/mavros/imu/data", 1));
@@ -152,13 +154,6 @@ bool MavrosBridge::activateCallback(std_srvs::SetBool::Request& req, std_srvs::S
     return true;
 }
 
-// bool MavrosBridge::deactivateCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res)
-// {
-//     ROS_INFO("deactivate %u", req.data);
-//     res.success = activate(!req.data);
-//     return true;
-// }
-
 void MavrosBridge::stateCallback(mavros_msgs::State msg)
 {
     last_state_ = msg;
@@ -170,10 +165,10 @@ void MavrosBridge::stateCallback(mavros_msgs::State msg)
     }
 }
 
-void MavrosBridge::hpCallback(mavros_msgs::HomePosition msg)
-{
-    hp_valid_ = true;
-}
+// void MavrosBridge::hpCallback(mavros_msgs::HomePosition msg)
+// {
+//     hp_valid_ = true;
+// }
 
 void MavrosBridge::batteryCallback(sensor_msgs::BatteryState msg)
 {
@@ -198,7 +193,7 @@ void MavrosBridge::odomCallback(nav_msgs::Odometry msg)
     pose.header = msg.header;
     pose.pose = msg.pose.pose;
     odom_cur_ = msg;
-    vision_pose_pub_.publish(pose);
+    // vision_pose_pub_.publish(pose);
 
     if(!nav_initialized_){
         ROS_INFO("Nav initialized");
@@ -209,7 +204,7 @@ void MavrosBridge::odomCallback(nav_msgs::Odometry msg)
 bool MavrosBridge::checkMove(void)
 {
     bool guided = last_state_.mode == "GUIDED";
-    return last_state_.armed && guided && hp_valid_;
+    return last_state_.armed && guided && nav_initialized_;
 }
 
 sensor_msgs::Joy MavrosBridge::convertRCtoJoy(const mavros_msgs::RCIn& msg)
@@ -252,11 +247,6 @@ void MavrosBridge::initialSetup(void)
 
 bool MavrosBridge::activate(bool activate)
 {
-    // if (!nav_initialized_ || !ap_initialized_)
-    // {
-    //     ROS_ERROR("AP or Nav not initialized");
-    //     return false;
-    // }
     if(!ap_initialized_)
     {
         ROS_ERROR("AP not initialized");
@@ -297,28 +287,31 @@ bool MavrosBridge::activate(bool activate)
     return true;
 }
 
+bool MavrosBridge::takeoffCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res)
+{
+    res.success = takeoff(1.0);
+    return true;
+}
+
+bool MavrosBridge::takeoff(float altitude)
+{
+    if(!checkMove())
+    {
+        ROS_ERROR("Not ready to takeoff");
+        return false;
+    }
+
+    ROS_INFO("Takeoff to %f", altitude);
+    geometry_msgs::PoseStamped pose;
+    pose.pose.position.z = altitude;
+    setpoint_pos_pub_.publish(pose);
+    return true;
+}
+
 void MavrosBridge::setupStreamRate()
 {
     ros::NodeHandle nh;
     ros::Rate rate(1);
-
-    // // Wait for the pull_param service to become available
-    // while (ros::ok() && !set_msg_rate_group_client_.waitForExistence(ros::Duration(1.0))) {
-    //   // ROS_INFO("Waiting for /mavros/set_stream_rate service to become available...");
-    //   rate.sleep();
-    // }
-
-    // ros::Duration(3.0).sleep();
-
-    // ROS_INFO("Disable all streams");
-    // mavros_msgs::StreamRate stream_rate_srv;
-    // stream_rate_srv.request.stream_id = 0;
-    // stream_rate_srv.request.message_rate = 1;
-    // stream_rate_srv.request.on_off = false;
-    // if (!set_msg_rate_group_client_.call(stream_rate_srv)) {
-    //   ROS_ERROR("Failed to call service /mavros/set_stream_rate");
-    //   return;
-    // }
 
     while (ros::ok() && !set_msg_rate_client_.waitForExistence(ros::Duration(1.0))) {
         rate.sleep();

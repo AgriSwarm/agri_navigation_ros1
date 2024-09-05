@@ -13,6 +13,7 @@
 #include <mavros_msgs/HomePosition.h>
 #include <mavros_msgs/ParamGet.h>
 #include <mavros_msgs/ParamSet.h>
+#include <mavros_msgs/PositionTarget.h>
 #include <sensor_msgs/Joy.h>
 #include <nav_msgs/Odometry.h>
 #include <std_msgs/Bool.h>
@@ -42,6 +43,7 @@ private:
     void rcCallback(mavros_msgs::RCIn msg);
     // void activateCallback(std_msgs::Bool msg);
     bool activateCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
+    bool takeoffCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
     void stateCallback(mavros_msgs::State msg);
     void hpCallback(mavros_msgs::HomePosition msg);
     void batteryCallback(sensor_msgs::BatteryState msg);
@@ -52,6 +54,7 @@ private:
     sensor_msgs::Joy convertRCtoJoy(const mavros_msgs::RCIn& msg);
     void initialSetup(void);
     bool activate(bool activate);
+    bool takeoff(float altitude);
 
     void setupStreamRate();
     void thermalTimerCallback(const ros::TimerEvent& event);
@@ -70,7 +73,7 @@ private:
     ros::Subscriber state_sub_;
     ros::Subscriber hp_sub_;
     ros::Subscriber battery_sub_, odom_sub_, status_sub_;
-    ros::ServiceServer activate_srv_;
+    ros::ServiceServer activate_srv_, takeoff_srv_;
 
     // message_filters::Subscriber<geometry_msgs::PoseStamped> pose_sub_;
     // message_filters::Subscriber<sensor_msgs::Imu> imu_sub_;
@@ -83,7 +86,7 @@ private:
     ros::Publisher pub_temp1_;
     ros::Timer thermal_timer_, vio_align_timer_;
 
-    ros::Publisher set_gp_origin_pub_, odom_pub_;
+    ros::Publisher set_gp_origin_pub_, odom_pub_, setpoint_pos_pub_, setpoint_raw_pub_;
     ros::ServiceClient mode_client_;
     ros::ServiceClient arm_client_;
     ros::ServiceClient set_msg_rate_group_client_;
