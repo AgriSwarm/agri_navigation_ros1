@@ -164,8 +164,8 @@ add_executable(odom_visualization src/odom_visualization.cpp)
 target_link_libraries(odom_visualization
    ${catkin_LIBRARIES}
    ${ARMADILLO_LIBRARIES}
-   pose_utils
-  # /home/tomoking/catkin_ws/devel/lib/libpose_utils.so
+  #  pose_utils
+  /home/initial/catkin_ws/devel/lib/libpose_utils.so
 )
 
 #############

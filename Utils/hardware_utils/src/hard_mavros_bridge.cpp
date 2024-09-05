@@ -27,7 +27,8 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~")
     set_msg_rate_client_ = nh_.serviceClient<mavros_msgs::MessageInterval>("/mavros/set_message_interval");
 
     rc_sub_ = nh_.subscribe("/mavros/rc/in", 1, &MavrosBridge::rcCallback, this);
-    activate_sub_ = nh_.subscribe("/mavros_bridge/activate", 1, &MavrosBridge::activateCallback, this);
+    // activate_sub_ = nh_.subscribe("/mavros_bridge/activate", 1, &MavrosBridge::activateCallback, this);
+    activate_srv_ = nh_.advertiseService("/mavros_bridge/activate", &MavrosBridge::activateCallback, this);
     state_sub_ = nh_.subscribe("/mavros/state", 1, &MavrosBridge::stateCallback, this);
     // hp_sub_ = nh_.subscribe("/mavros/home_position/home", 1, &MavrosBridge::hpCallback, this);
     battery_sub_ = nh_.subscribe("/mavros/battery", 1, &MavrosBridge::batteryCallback, this);
@@ -41,7 +42,7 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~")
     sync_pose_imu_->registerCallback(boost::bind(&MavrosBridge::poseImuCallback, this, _1, _2));
 
     thermal_timer_ = nh_.createTimer(ros::Duration(1.0), &MavrosBridge::thermalTimerCallback, this);
-    vio_align_timer_ = nh_.createTimer(ros::Duration(vio_align_interval_), &MavrosBridge::vioAlignTimerCallback, this);
+    // vio_align_timer_ = nh_.createTimer(ros::Duration(vio_align_interval_), &MavrosBridge::vioAlignTimerCallback, this);
 
     if (set_params_)
         setupStreamRate();
@@ -144,20 +145,27 @@ void MavrosBridge::rcCallback(mavros_msgs::RCIn msg)
     joy_pub_.publish(joy);
 }
 
-void MavrosBridge::activateCallback(std_msgs::Bool msg)
+// void MavrosBridge::activateCallback(std_msgs::Bool msg)
+// {
+//     ROS_INFO("activate %u", msg.data);
+//     activate(msg.data);
+// }
+
+bool MavrosBridge::activateCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res)
 {
-    ROS_INFO("activate %u", msg.data);
-    activate(msg.data);
+    ROS_INFO("activate %u", req.data);
+    res.success = activate(req.data);
+    return true;
 }
 
 void MavrosBridge::stateCallback(mavros_msgs::State msg)
 {
     last_state_ = msg;
 
-    if (!initialized_)
+    if (!ap_initialized_)
     {
         initialSetup();
-        initialized_ = true;
+        ap_initialized_ = true;
     }
 }
 
@@ -188,7 +196,12 @@ void MavrosBridge::odomCallback(nav_msgs::Odometry msg)
     geometry_msgs::PoseStamped pose;
     pose.header = msg.header;
     pose.pose = msg.pose.pose;
+    odom_cur_ = msg;
     vision_pose_pub_.publish(pose);
+
+    if(!nav_initialized_){
+        nav_initialized_ = true;
+    }
 }
 
 bool MavrosBridge::checkMove(void)
@@ -237,6 +250,12 @@ void MavrosBridge::initialSetup(void)
 
 bool MavrosBridge::activate(bool activate)
 {
+    if (!nav_initialized_ || !ap_initialized_)
+    {
+        ROS_ERROR("AP or Nav not initialized");
+        return false;
+    }
+    
     ROS_INFO("set GUIDED");
     mavros_msgs::SetMode mode;
     mode.request.base_mode = 0;
@@ -248,6 +267,13 @@ bool MavrosBridge::activate(bool activate)
     cmd.request.value = activate;
     arm_client_.call(cmd);
 
+    if (activate)
+    {
+        swarm_msgs::SystemStatus status;
+        status.status_id = swarm_msgs::SystemStatus::ACTIVATE;
+        status.drone_id = self_id;
+        status_pub_.publish(status);
+    }
     return true;
 }
 
