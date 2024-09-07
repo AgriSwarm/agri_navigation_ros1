@@ -158,7 +158,7 @@ void MavrosBridge::stateCallback(mavros_msgs::State msg)
 {
     last_state_ = msg;
 
-    if (!ap_initialized_)
+    if (!ap_initialized_ && nav_initialized_)
     {
         initialSetup();
         ap_initialized_ = true;
