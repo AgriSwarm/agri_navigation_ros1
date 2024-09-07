@@ -1617,16 +1617,17 @@ namespace ego_planner
   {
     std::string ego_config_path;
     nh.param<std::string>("ego_config_path", ego_config_path, "");
-    cv::FileStorage fsSettings;
-    try {
-        fsSettings.open(ego_config_path.c_str(), cv::FileStorage::READ);
-        std::cout << "PolyTrajOptimizer Loaded EGO config from " << ego_config_path << std::endl;
-    } catch(cv::Exception ex) {
-        std::cerr << "ERROR:" << ex.what() << " Can't open config file" << std::endl;
-        exit(-1);
-    }
+    cv::FileStorage general_fs;
+    std::cout << "PolyTrajOptimizer Loaded config from " << ego_config_path << std::endl;
+    general_fs.open(ego_config_path.c_str(), cv::FileStorage::READ);
+    int pn = ego_config_path.find_last_of('/');
+    std::string configPath = ego_config_path.substr(0, pn);
+    std::string algo_config_path = configPath + "/" + (std::string)general_fs["ego_planner"];
+    cv::FileStorage algo_fs;
+    std::cout << "PolyTrajOptimizer Loaded EGO config from " << algo_config_path << std::endl;
+    algo_fs.open(algo_config_path.c_str(), cv::FileStorage::READ);
 
-    cv::FileNode manager_node = fsSettings["optimization"];
+    cv::FileNode manager_node = algo_fs["optimization"];
     if (manager_node.empty())
     {
         ROS_ERROR("[PolyTrajOptimizer] Can't find 'optimization' in config file.");

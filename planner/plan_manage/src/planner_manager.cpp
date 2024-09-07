@@ -34,16 +34,17 @@ namespace ego_planner
   {
     std::string ego_config_path;
     nh.param<std::string>("ego_config_path", ego_config_path, "");
-    cv::FileStorage fsSettings;
-    try {
-        fsSettings.open(ego_config_path.c_str(), cv::FileStorage::READ);
-        std::cout << "EGOPlannerManager Loaded EGO config from " << ego_config_path << std::endl;
-    } catch(cv::Exception ex) {
-        std::cerr << "ERROR:" << ex.what() << " Can't open config file" << std::endl;
-        exit(-1);
-    }
+    cv::FileStorage general_fs;
+    std::cout << "EGOPlannerManager Loaded config from " << ego_config_path << std::endl;
+    general_fs.open(ego_config_path.c_str(), cv::FileStorage::READ);
+    int pn = ego_config_path.find_last_of('/');
+    std::string configPath = ego_config_path.substr(0, pn);
+    std::string algo_config_path = configPath + "/" + (std::string)general_fs["ego_planner"];
+    cv::FileStorage algo_fs;
+    std::cout << "EGOPlannerManager Loaded EGO config from " << algo_config_path << std::endl;
+    algo_fs.open(algo_config_path.c_str(), cv::FileStorage::READ);
 
-    cv::FileNode manager_node = fsSettings["manager"];
+    cv::FileNode manager_node = algo_fs["manager"];
     if (manager_node.empty())
     {
         ROS_ERROR("[EGOPlannerManager] Can't find 'manager' in config file.");
@@ -64,7 +65,8 @@ namespace ego_planner
     cout << "manager/planning_horizen: " << pp_.planning_horizen_ << endl;
     cout << "manager/use_multitopology_trajs: " << pp_.use_multitopology_trajs << endl;
 
-    fsSettings.release();
+    general_fs.release();
+    algo_fs.release();
 
     // nh.param("manager/max_vel", pp_.max_vel_, 1.0);
     // nh.param("manager/max_acc", pp_.max_acc_, 1.0);

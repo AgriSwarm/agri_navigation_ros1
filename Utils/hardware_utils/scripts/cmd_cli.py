@@ -6,6 +6,7 @@ import sys
 import termios
 import tty
 from functools import partial
+from mavros_msgs.srv import CommandTOL
 
 def getch():
     fd = sys.stdin.fileno()
@@ -18,8 +19,6 @@ def getch():
     return ch
 
 def call_activate_service(activate):
-    rospy.init_node('activate_client', anonymous=True)
-    
     service_name = '/mavros_bridge/activate'
     
     try:
@@ -36,11 +35,9 @@ def call_activate_service(activate):
         print(f"Service call failed: {e}")
         return False
     
-def call_takeoff_service():
-    rospy.init_node('takeoff_client', anonymous=True)
-    
-    service_name = '/mavros_bridge/takeoff'
-    
+def call_land_service():
+    service_name = '/mavros/cmd/land'
+
     try:
         rospy.wait_for_service(service_name, timeout=5.0)  # 5秒のタイムアウトを設定
     except rospy.ROSException:
@@ -48,11 +45,28 @@ def call_takeoff_service():
         return False
     
     try:
-        takeoff_service = rospy.ServiceProxy(service_name, SetBool)
-        response = takeoff_service(True)
-        return response.success
+        takeoff_cl = rospy.ServiceProxy('/mavros/cmd/land', CommandTOL)
+        response = takeoff_cl(altitude=1, latitude=0, longitude=0, min_pitch=0, yaw=0)
+        rospy.loginfo(response)
     except rospy.ServiceException as e:
-        print(f"Service call failed: {e}")
+        print("Service call failed: %s"%e)
+        return False
+    
+def call_takeoff_service():
+    service_name = '/mavros/cmd/takeoff'
+
+    try:
+        rospy.wait_for_service(service_name, timeout=5.0)  # 5秒のタイムアウトを設定
+    except rospy.ROSException:
+        print(f"Service {service_name} is not available. Timeout occurred.")
+        return False
+    
+    try:
+        takeoff_cl = rospy.ServiceProxy('/mavros/cmd/takeoff', CommandTOL)
+        response = takeoff_cl(altitude=1, latitude=0, longitude=0, min_pitch=0, yaw=0)
+        rospy.loginfo(response)
+    except rospy.ServiceException as e:
+        print("Service call failed: %s"%e)
         return False
 
 def print_status(action, success):
@@ -62,6 +76,7 @@ def print_status(action, success):
         print(f"Failed to {action} the MavrosBridge")
 
 if __name__ == '__main__':
+    rospy.init_node('mavros_bridge_client', anonymous=True)
     print("Press 'A' to activate, 'D' to deactivate, or 'Q' to quit.")
     
     while True:
@@ -76,8 +91,11 @@ if __name__ == '__main__':
         elif char == 't':
             result = call_takeoff_service()
             print_status("takeoff", result)
+        elif char == 'l':
+            result = call_land_service()
+            print_status("land", result)
         elif char == 'q':
             print("Quitting...")
             break
         else:
-            print("Invalid input. Press 'A' to activate, 'D' to deactivate, or 'Q' to quit.")
+            print("Invalid input. Press 'A' to activate, 'D' to deactivate, 'T' to takeoff, 'L' to land or 'Q' to quit.")
