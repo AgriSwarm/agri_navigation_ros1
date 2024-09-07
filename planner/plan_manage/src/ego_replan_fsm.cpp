@@ -80,14 +80,15 @@ namespace ego_planner
 
     std::string ego_config_path;
     nh.param<std::string>("ego_config_path", ego_config_path, "");
-    cv::FileStorage fsSettings;
-    try {
-        fsSettings.open(ego_config_path.c_str(), cv::FileStorage::READ);
-        std::cout << "EGOReplanFSM Loaded EGO config from " << ego_config_path << std::endl;
-    } catch(cv::Exception ex) {
-        std::cerr << "ERROR:" << ex.what() << " Can't open config file" << std::endl;
-        exit(-1);
-    }
+    cv::FileStorage general_fs;
+    std::cout << "EGOReplanFSM Loaded config from " << ego_config_path << std::endl;
+    general_fs.open(ego_config_path.c_str(), cv::FileStorage::READ);
+    int pn = ego_config_path.find_last_of('/');
+    std::string configPath = ego_config_path.substr(0, pn);
+    std::string algo_config_path = configPath + "/" + (std::string)general_fs["ego_planner"];
+    cv::FileStorage algo_fs;
+    std::cout << "EGOReplanFSM Loaded EGO config from " << algo_config_path << std::endl;
+    algo_fs.open(algo_config_path.c_str(), cv::FileStorage::READ);
 
     exec_state_ = FSM_EXEC_STATE::INIT;
     have_target_ = false;
@@ -96,7 +97,7 @@ namespace ego_planner
     flag_escape_emergency_ = true;
     mandatory_stop_ = false;
 
-    cv::FileNode fsm_node = fsSettings["fsm"];
+    cv::FileNode fsm_node = algo_fs["fsm"];
     if (fsm_node.empty())
     {
         ROS_ERROR("[EGOReplanFSM] Can't find 'fsm' in config file.");
@@ -118,7 +119,8 @@ namespace ego_planner
     cout << "fsm/fail_safe: " << enable_fail_safe_ << endl;
     cout << "fsm/ground_height_measurement: " << enable_ground_height_measurement_ << endl;
 
-    fsSettings.release();
+    general_fs.release();
+    algo_fs.release();
   }
 
   void EGOReplanFSM::execFSMCallback(const ros::TimerEvent &e)

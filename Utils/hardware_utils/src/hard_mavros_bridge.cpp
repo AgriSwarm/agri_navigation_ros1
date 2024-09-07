@@ -36,7 +36,7 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~")
     battery_sub_ = nh_.subscribe("/mavros/battery", 1, &MavrosBridge::batteryCallback, this);
     odom_sub_ = nh_.subscribe("/mavros_bridge/odom", 1, &MavrosBridge::odomCallback, this);
     status_sub_ = nh_.subscribe("/hardware_bridge/status", 1, &MavrosBridge::statusCallback, this);
-    takeoff_srv_ = nh_.advertiseService("/mavros_bridge/takeoff", &MavrosBridge::takeoffCallback, this);
+    // takeoff_srv_ = nh_.advertiseService("/mavros_bridge/takeoff", &MavrosBridge::takeoffCallback, this);
 
     pose_sub_.reset(new message_filters::Subscriber<geometry_msgs::PoseStamped>(nh_, "/mavros/local_position/pose", 1));
     imu_sub_.reset(new message_filters::Subscriber<sensor_msgs::Imu>(nh_, "/mavros/imu/data", 1));
@@ -287,26 +287,26 @@ bool MavrosBridge::activate(bool activate)
     return true;
 }
 
-bool MavrosBridge::takeoffCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res)
-{
-    res.success = takeoff(1.0);
-    return true;
-}
+// bool MavrosBridge::takeoffCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res)
+// {
+//     res.success = takeoff(1.0);
+//     return true;
+// }
 
-bool MavrosBridge::takeoff(float altitude)
-{
-    if(!checkMove())
-    {
-        ROS_ERROR("Not ready to takeoff");
-        return false;
-    }
+// bool MavrosBridge::takeoff(float altitude)
+// {
+//     if(!checkMove())
+//     {
+//         ROS_ERROR("Not ready to takeoff");
+//         return false;
+//     }
 
-    ROS_INFO("Takeoff to %f", altitude);
-    geometry_msgs::PoseStamped pose;
-    pose.pose.position.z = altitude;
-    setpoint_pos_pub_.publish(pose);
-    return true;
-}
+//     ROS_INFO("Takeoff to %f", altitude);
+//     geometry_msgs::PoseStamped pose;
+//     pose.pose.position.z = altitude;
+//     setpoint_pos_pub_.publish(pose);
+//     return true;
+// }
 
 void MavrosBridge::setupStreamRate()
 {

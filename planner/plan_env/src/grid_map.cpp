@@ -62,58 +62,62 @@
 
     void GridMap::initParams(ros::NodeHandle & nh)
     {
-        std::string vins_config_path;
-        nh.param<std::string>("ego_config_path", vins_config_path, "");
-        cv::FileStorage fsSettings;
-        try {
-            fsSettings.open(vins_config_path.c_str(), cv::FileStorage::READ);
-            std::cout << "PGO Loaded VINS config from " << vins_config_path << std::endl;
-        } catch(cv::Exception ex) {
-            std::cerr << "ERROR:" << ex.what() << " Can't open config file" << std::endl;
-            exit(-1);
-        }
+        std::string ego_config_path;
+        nh.param<std::string>("ego_config_path", ego_config_path, "");
+        cv::FileStorage general_fs;
+        std::cout << "GridMap Loaded config from " << ego_config_path << std::endl;
+        general_fs.open(ego_config_path.c_str(), cv::FileStorage::READ);
+        int pn = ego_config_path.find_last_of('/');
+        std::string configPath = ego_config_path.substr(0, pn);
+        std::string algo_config_path = configPath + "/" + (std::string)general_fs["ego_planner"];
+        cv::FileStorage algo_fs;
+        std::cout << "GridMap Loaded EGO config from " << algo_config_path << std::endl;
+        algo_fs.open(algo_config_path.c_str(), cv::FileStorage::READ);
+        cv::FileStorage depth_fs;
+        std::cout << "GridMap Loaded Depth config from " << configPath + "/" + (std::string)algo_fs["depth_cam_calib"] << std::endl;
+        depth_fs.open(configPath + "/" + (std::string)general_fs["depth_cam_calib"], cv::FileStorage::READ);
+        cv::FileNode grid_map_node = algo_fs["grid_map"];
+        mp_.frame_id_ = (string)grid_map_node["frame_id"];
+        mp_.enable_virtual_walll_ = ((int)grid_map_node["enable_virtual_wall"]) != 0;
+        mp_.pose_type_ = (int)grid_map_node["pose_type"];
+        mp_.odom_depth_timeout_ = (double)grid_map_node["odom_depth_timeout"];
+        mp_.resolution_ = (double)grid_map_node["resolution"];
+        mp_.local_update_range3d_(0) = (double)grid_map_node["local_update_range_x"];
+        mp_.local_update_range3d_(1) = (double)grid_map_node["local_update_range_y"];
+        mp_.local_update_range3d_(2) = (double)grid_map_node["local_update_range_z"];
+        mp_.obstacles_inflation_ = (double)grid_map_node["obstacles_inflation"];
+        mp_.virtual_ceil_ = (double)grid_map_node["virtual_ceil"];
+        mp_.virtual_ground_ = (double)grid_map_node["virtual_ground"];
 
-        mp_.frame_id_ = (string)fsSettings["grid_map"]["frame_id"];
-        mp_.enable_virtual_walll_ = ((int)fsSettings["grid_map"]["enable_virtual_wall"]) != 0;
-        mp_.pose_type_ = (int)fsSettings["grid_map"]["pose_type"];
-        mp_.odom_depth_timeout_ = (double)fsSettings["grid_map"]["odom_depth_timeout"];
-        mp_.resolution_ = (double)fsSettings["grid_map"]["resolution"];
-        mp_.local_update_range3d_(0) = (double)fsSettings["grid_map"]["local_update_range_x"];
-        mp_.local_update_range3d_(1) = (double)fsSettings["grid_map"]["local_update_range_y"];
-        mp_.local_update_range3d_(2) = (double)fsSettings["grid_map"]["local_update_range_z"];
-        mp_.obstacles_inflation_ = (double)fsSettings["grid_map"]["obstacles_inflation"];
-        mp_.virtual_ceil_ = (double)fsSettings["grid_map"]["virtual_ceil"];
-        mp_.virtual_ground_ = (double)fsSettings["grid_map"]["virtual_ground"];
+        mp_.fx_ = (double)depth_fs["projection_parameters"]["fx"];
+        mp_.fy_ = (double)depth_fs["projection_parameters"]["fy"];
+        mp_.cx_ = (double)depth_fs["projection_parameters"]["cx"];
+        mp_.cy_ = (double)depth_fs["projection_parameters"]["cy"];
 
-        mp_.fx_ = (double)fsSettings["grid_map"]["fx"];
-        mp_.fy_ = (double)fsSettings["grid_map"]["fy"];
-        mp_.cx_ = (double)fsSettings["grid_map"]["cx"];
-        mp_.cy_ = (double)fsSettings["grid_map"]["cy"];
+        mp_.use_depth_filter_ = ((int)grid_map_node["use_depth_filter"]) != 0;
+        mp_.depth_filter_tolerance_ = (double)grid_map_node["depth_filter_tolerance"];
+        mp_.depth_filter_maxdist_ = (double)grid_map_node["depth_filter_maxdist"];
+        mp_.depth_filter_mindist_ = (double)grid_map_node["depth_filter_mindist"];
+        mp_.depth_filter_margin_ = (int)grid_map_node["depth_filter_margin"];
+        mp_.k_depth_scaling_factor_ = (double)grid_map_node["k_depth_scaling_factor"];
+        mp_.est_depth_scaling_factor_ = (double)grid_map_node["est_depth_scaling_factor"];
+        mp_.inverse_depth_ = ((int)grid_map_node["inverse_depth"]) != 0;
+        mp_.skip_pixel_ = (int)grid_map_node["skip_pixel"];
+        mp_.p_hit_ = (double)grid_map_node["p_hit"];
+        mp_.p_miss_ = (double)grid_map_node["p_miss"];
+        mp_.p_min_ = (double)grid_map_node["p_min"];
+        mp_.p_max_ = (double)grid_map_node["p_max"];
+        mp_.p_occ_ = (double)grid_map_node["p_occ"];
+        mp_.fading_time_ = (double)grid_map_node["fading_time"];
+        mp_.min_ray_length_ = (double)grid_map_node["min_ray_length"];
+        mp_.show_occ_time_ = ((int)grid_map_node["show_occ_time"]) != 0;
 
-        mp_.use_depth_filter_ = ((int)fsSettings["grid_map"]["use_depth_filter"]) != 0;
-        mp_.depth_filter_tolerance_ = (double)fsSettings["grid_map"]["depth_filter_tolerance"];
-        mp_.depth_filter_maxdist_ = (double)fsSettings["grid_map"]["depth_filter_maxdist"];
-        mp_.depth_filter_mindist_ = (double)fsSettings["grid_map"]["depth_filter_mindist"];
-        mp_.depth_filter_margin_ = (int)fsSettings["grid_map"]["depth_filter_margin"];
-        mp_.k_depth_scaling_factor_ = (double)fsSettings["grid_map"]["k_depth_scaling_factor"];
-        mp_.est_depth_scaling_factor_ = (double)fsSettings["grid_map"]["est_depth_scaling_factor"];
-        mp_.inverse_depth_ = ((int)fsSettings["grid_map"]["inverse_depth"]) != 0;
-        mp_.skip_pixel_ = (int)fsSettings["grid_map"]["skip_pixel"];
-        mp_.p_hit_ = (double)fsSettings["grid_map"]["p_hit"];
-        mp_.p_miss_ = (double)fsSettings["grid_map"]["p_miss"];
-        mp_.p_min_ = (double)fsSettings["grid_map"]["p_min"];
-        mp_.p_max_ = (double)fsSettings["grid_map"]["p_max"];
-        mp_.p_occ_ = (double)fsSettings["grid_map"]["p_occ"];
-        mp_.fading_time_ = (double)fsSettings["grid_map"]["fading_time"];
-        mp_.min_ray_length_ = (double)fsSettings["grid_map"]["min_ray_length"];
-        mp_.show_occ_time_ = ((int)fsSettings["grid_map"]["show_occ_time"]) != 0;
-
-        mp_.occ_interval_ = (double)fsSettings["grid_map"]["occ_interval"];
-        mp_.vis_interval_ = (double)fsSettings["grid_map"]["vis_interval"];
+        mp_.occ_interval_ = (double)grid_map_node["occ_interval"];
+        mp_.vis_interval_ = (double)grid_map_node["vis_interval"];
 
         Eigen::Matrix4d cam2body_ = Eigen::Matrix4d::Identity();
         cv::Mat T_body_cam;
-        fsSettings["grid_map"]["body_T_cam"] >> T_body_cam;
+        general_fs["body_T_depth_cam"] >> T_body_cam;
         if (!T_body_cam.empty()) {
             for (int i = 0; i < 4; i++) {
                 for (int j = 0; j < 4; j++) {
@@ -213,6 +217,10 @@
         //                 0.0, 1.0, 0.0, 0.0,
         //                 0.0, 0.0, 1.0, 0.0,
         //                 0.0, 0.0, 0.0, 1.0;
+
+        general_fs.release();
+        algo_fs.release();
+        depth_fs.release();
     }
 
     void GridMap::updateOccupancyCallback(const ros::TimerEvent & /*event*/)
