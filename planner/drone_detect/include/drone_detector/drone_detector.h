@@ -130,7 +130,7 @@ class DroneDetector
   int my_id_;
   cv::Mat depth_img_, color_img_;
 
-  Eigen::Matrix4d cam2body_;
+  Eigen::Matrix4d base2cam_;
   Eigen::Matrix4d cam2world_;
   Eigen::Quaterniond cam2world_quat_;
   Eigen::Vector4d my_pose_world_;

@@ -6,12 +6,14 @@
 #include <visualization_msgs/Marker.h>
 #include <ros/ros.h>
 #include <mavros_msgs/PositionTarget.h>
+#include <geometry_msgs/TwistStamped.h>
 
 using namespace Eigen;
 
-ros::Publisher pos_cmd_pub;
+ros::Publisher pos_cmd_pub, twist_pub;
 
 mavros_msgs::PositionTarget cmd;
+geometry_msgs::TwistStamped twist;
 // double pos_gain[3] = {0, 0, 0};
 // double vel_gain[3] = {0, 0, 0};
 
@@ -161,6 +163,16 @@ void publish_cmd(Vector3d p, Vector3d v, Vector3d a, Vector3d j, double y, doubl
   cmd.yaw = y;
   cmd.yaw_rate = yd;
   pos_cmd_pub.publish(cmd);
+
+  twist.header.stamp = ros::Time::now();
+  twist.header.frame_id = "base_link";
+  twist.twist.angular.x = 0;
+  twist.twist.angular.y = 0;
+  twist.twist.angular.z = yd;
+  twist.twist.linear.x = v(0);
+  twist.twist.linear.y = v(1);
+  twist.twist.linear.z = v(2);
+  twist_pub.publish(twist);
 
   last_pos_ = p;
 }
@@ -323,6 +335,7 @@ int main(int argc, char **argv)
   ros::Subscriber heartbeat_sub = nh.subscribe("heartbeat", 10, heartbeatCallback);
 
   pos_cmd_pub = nh.advertise<mavros_msgs::PositionTarget>("/position_cmd", 50);
+  twist_pub = nh.advertise<geometry_msgs::TwistStamped>("/twist_cmd", 50);
 
   ros::Timer cmd_timer = nh.createTimer(ros::Duration(0.01), cmdCallback);
 

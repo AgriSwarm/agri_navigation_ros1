@@ -1,6 +1,30 @@
 #include "hard_mavros_bridge.h"
 
-MavrosBridge::MavrosBridge() : nh_(), pnh_("~")
+const std::vector<MavrosBridge::ParamPair> MavrosBridge::params = {
+    {"ATC_ANG_RLL_P", &hardware_utils::PIDConfig::ATC_ANG_RLL_P},
+    {"ATC_ANG_PIT_P", &hardware_utils::PIDConfig::ATC_ANG_PIT_P},
+    {"ATC_ANG_YAW_P", &hardware_utils::PIDConfig::ATC_ANG_YAW_P},
+    {"ATC_RAT_RLL_P", &hardware_utils::PIDConfig::ATC_RAT_RLL_P},
+    {"ATC_RAT_RLL_I", &hardware_utils::PIDConfig::ATC_RAT_RLL_I},
+    {"ATC_RAT_RLL_D", &hardware_utils::PIDConfig::ATC_RAT_RLL_D},
+    {"ATC_RAT_PIT_P", &hardware_utils::PIDConfig::ATC_RAT_PIT_P},
+    {"ATC_RAT_PIT_I", &hardware_utils::PIDConfig::ATC_RAT_PIT_I},
+    {"ATC_RAT_PIT_D", &hardware_utils::PIDConfig::ATC_RAT_PIT_D},
+    {"ATC_RAT_YAW_P", &hardware_utils::PIDConfig::ATC_RAT_YAW_P},
+    {"ATC_RAT_YAW_I", &hardware_utils::PIDConfig::ATC_RAT_YAW_I},
+    {"ATC_RAT_YAW_D", &hardware_utils::PIDConfig::ATC_RAT_YAW_D},
+    {"PSC_POSXY_P", &hardware_utils::PIDConfig::PSC_POSXY_P},
+    {"PSC_POSZ_P", &hardware_utils::PIDConfig::PSC_POSZ_P},
+    {"PSC_VELXY_P", &hardware_utils::PIDConfig::PSC_VELXY_P},
+    {"PSC_VELXY_I", &hardware_utils::PIDConfig::PSC_VELXY_I},
+    {"PSC_VELZ_P", &hardware_utils::PIDConfig::PSC_VELZ_P},
+    {"PSC_VELZ_I", &hardware_utils::PIDConfig::PSC_VELZ_I},
+    {"PSC_ACCZ_P", &hardware_utils::PIDConfig::PSC_ACCZ_P},
+    {"PSC_ACCZ_I", &hardware_utils::PIDConfig::PSC_ACCZ_I},
+    {"PSC_ACCZ_D", &hardware_utils::PIDConfig::PSC_ACCZ_D},
+};
+
+MavrosBridge::MavrosBridge() : nh_(), pnh_("~"), server_(config_mutex_) 
 {
     pnh_.param<int>("cells_batt", cells_batt_, 2);
     pnh_.param<int>("imu_freq", imu_freq_, 100);
@@ -17,6 +41,7 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~")
     odom_pub_ = nh_.advertise<nav_msgs::Odometry>("/mavros_bridge/ap_odom", 10);
     setpoint_pos_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("/mavros/setpoint_position/local", 10);
     setpoint_raw_pub_ = nh_.advertise<mavros_msgs::PositionTarget>("/mavros/setpoint_raw/local", 10);
+    pict_state_pub_ = nh_.advertise<jsk_rviz_plugins::Pictogram>("/mavros_bridge/pictogram", 10);
 
     pub_temp0_ = nh_.advertise<std_msgs::Float32>("/hardware_bridge/cpu_temperature", 1);
     pub_temp1_ = nh_.advertise<std_msgs::Float32>("/hardware_bridge/gpu_temperature", 1);
@@ -27,6 +52,7 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~")
     set_param_client_ = nh_.serviceClient<mavros_msgs::ParamSet>("/mavros/param/set");
     set_msg_rate_group_client_ = nh_.serviceClient<mavros_msgs::StreamRate>("/mavros/set_stream_rate");
     set_msg_rate_client_ = nh_.serviceClient<mavros_msgs::MessageInterval>("/mavros/set_message_interval");
+    pull_param_client_ = nh_.serviceClient<mavros_msgs::ParamPull>("/mavros/param/pull");
 
     rc_sub_ = nh_.subscribe("/mavros/rc/in", 1, &MavrosBridge::rcCallback, this);
     // activate_sub_ = nh_.subscribe("/mavros_bridge/activate", 1, &MavrosBridge::activateCallback, this);
@@ -44,10 +70,109 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~")
     sync_pose_imu_->registerCallback(boost::bind(&MavrosBridge::poseImuCallback, this, _1, _2));
 
     thermal_timer_ = nh_.createTimer(ros::Duration(1.0), &MavrosBridge::thermalTimerCallback, this);
+    pict_state_timer_ = nh_.createTimer(ros::Duration(1.0), &MavrosBridge::pictStateTimerCallback, this);
     // vio_align_timer_ = nh_.createTimer(ros::Duration(vio_align_interval_), &MavrosBridge::vioAlignTimerCallback, this);
 
-    if (set_params_)
+    if (set_params_){
         setupStreamRate();
+        hardware_utils::PIDConfig initial_config = getPIDParam();
+        server_.setConfigDefault(initial_config);
+        server_.updateConfig(initial_config);
+        
+        config_last_ = initial_config;
+
+        dynamic_reconfigure::Server<hardware_utils::PIDConfig>::CallbackType f;
+        f = boost::bind(&MavrosBridge::configCallback, this, _1, _2);
+        server_.setCallback(f);
+    }
+}
+
+void MavrosBridge::configCallback(hardware_utils::PIDConfig& config, uint32_t level)
+{
+    ROS_INFO("Reconfigure Request:");
+
+    for (const auto& param : params) {
+        if (config.*(param.value) != config_last_.*(param.value)) {
+            setParam(param.name, 0, config.*(param.value));
+            // ROS_INFO("Set %s to %f", param.name.c_str(), config.*(param.value));
+        }
+    }
+
+    config_last_ = config;
+}
+
+hardware_utils::PIDConfig MavrosBridge::getPIDParam() {
+    if (!init_mavparams_){
+        ROS_INFO("Pulling params...");
+        mavros_msgs::ParamPull srv;
+        if (pull_param_client_.call(srv)) {
+            if (srv.response.success)
+            {
+                ROS_INFO("Successfully pulled params");
+            }
+            else
+            {
+                ROS_ERROR("Failed to pull params");
+            }
+        } else {
+            ROS_ERROR("Failed to call service ParamPull");
+        }
+        init_mavparams_ = true;
+    }
+    hardware_utils::PIDConfig config;
+    std::tuple<bool, int, float> param;
+
+    // param = getParam("ATC_ANG_RLL_P");
+    // config.ATC_ANG_RLL_P = std::get<1>(param);
+    for (const auto& param : params) {
+        auto result = getParam(param.name);
+        bool success = std::get<0>(result);
+        float value = std::get<2>(result);
+        if (success) {
+            config.*(param.value) = value;
+        }
+    }
+
+    return config;
+}
+
+std::tuple<bool, int, float> MavrosBridge::getParam(const std::string& param) {
+    mavros_msgs::ParamGet srv;
+    srv.request.param_id = param;
+
+    if (get_param_client_.call(srv)) {
+        ROS_INFO("Successfully get %s to int: %ld, real: %f", param.c_str(), srv.response.value.integer, srv.response.value.real);
+        return std::make_tuple(srv.response.success, 
+                                srv.response.value.integer, 
+                                srv.response.value.real);
+    } else {
+        ROS_ERROR("Failed to call service ParamGet");
+        return std::make_tuple(false, 0, 0.0f);
+    }
+}
+
+std::tuple<bool, int, float> MavrosBridge::setParam(const std::string& param, int value_integer, float value_real) {
+    mavros_msgs::ParamSet srv;
+    srv.request.param_id = param;
+    srv.request.value.integer = value_integer;
+    srv.request.value.real = value_real;
+
+    if (set_param_client_.call(srv)) {
+        if (srv.response.success)
+        {
+            ROS_INFO("Successfully set %s to int: %ld, real: %f", param.c_str(), srv.response.value.integer, srv.response.value.real);
+        }
+        else
+        {
+            ROS_ERROR("Failed to set %s", param.c_str());
+        }
+        return std::make_tuple(srv.response.success, 
+                                srv.response.value.integer, 
+                                srv.response.value.real);
+    } else {
+        ROS_ERROR("Failed to call service ParamSet");
+        return std::make_tuple(false, 0, 0.0f);
+    }
 }
 
 void MavrosBridge::poseImuCallback(const geometry_msgs::PoseStampedConstPtr& pose, const sensor_msgs::ImuConstPtr& imu)
@@ -65,44 +190,14 @@ void MavrosBridge::poseImuCallback(const geometry_msgs::PoseStampedConstPtr& pos
     odom_pub_.publish(odom);
 }
 
-void MavrosBridge::vioAlignTimerCallback(const ros::TimerEvent& event)
-{
-    std::tuple<bool, int, float> param = setParam("80", 2, 0.0f);
-}
-
-std::tuple<bool, int, float> MavrosBridge::getParam(const std::string& param) {
-    mavros_msgs::ParamGet srv;
-    srv.request.param_id = param;
-
-    if (get_param_client_.call(srv)) {
-        return std::make_tuple(srv.response.success, 
-                                srv.response.value.integer, 
-                                srv.response.value.real);
-    } else {
-        ROS_ERROR("Failed to call service ParamGet");
-        return std::make_tuple(false, 0, 0.0f);
-    }
-}
-
-std::tuple<bool, int, float> MavrosBridge::setParam(const std::string& param, int value_integer, float value_real) {
-    mavros_msgs::ParamSet srv;
-    srv.request.param_id = param;
-    srv.request.value.integer = value_integer;
-    srv.request.value.real = value_real;
-
-    if (set_param_client_.call(srv)) {
-        return std::make_tuple(srv.response.success, 
-                                srv.response.value.integer, 
-                                srv.response.value.real);
-    } else {
-        ROS_ERROR("Failed to call service ParamSet");
-        return std::make_tuple(false, 0, 0.0f);
-    }
-}
+// void MavrosBridge::vioAlignTimerCallback(const ros::TimerEvent& event)
+// {
+//     std::tuple<bool, int, float> param = setParam("80", 2, 0.0f);
+// }
 
 void MavrosBridge::statusCallback(const swarm_msgs::SystemStatus msg)
 {
-    if(msg.drone_id != self_id){
+    if(static_cast<int>(msg.drone_id) != self_id){
         return;
     }
 }
@@ -154,9 +249,69 @@ bool MavrosBridge::activateCallback(std_srvs::SetBool::Request& req, std_srvs::S
     return true;
 }
 
+void MavrosBridge::pictStateTimerCallback(const ros::TimerEvent&)
+{
+    if(!nav_initialized_){
+        transform_.setOrigin(tf::Vector3(0.0, 0.0, 0.0));
+        tf::Quaternion q;
+        q.setRPY(0, 0, 0);
+        transform_.setRotation(q);
+        br_.sendTransform(tf::StampedTransform(transform_, ros::Time::now(), "world", "base_link"));
+    }
+    pubPictgramState(last_state_);
+}
+
+void MavrosBridge::pubPictgramState(mavros_msgs::State msg)
+{
+    std::string character;
+    if (msg.connected){
+        if (msg.mode == "GUIDED")
+        {
+            character = "fa-mendeley";
+        }
+        else
+        {
+            character = "fa-link";
+        }
+    }else{
+        character = "three-dots";
+    }
+    
+    jsk_rviz_plugins::Pictogram pict;
+    pict.header = msg.header;
+    pict.header.frame_id = "base_link";
+    pict.pose.position.x = 0.0;
+    pict.pose.position.y = 0.0;
+    pict.pose.position.z = 0.1;
+    pict.pose.orientation.x = 0.0;
+    pict.pose.orientation.y = -0.7;
+    pict.pose.orientation.z = 0.0;
+    pict.pose.orientation.w = 0.7;
+    pict.size = 0.1;
+    
+    if (msg.armed)
+    {
+        pict.color.r = 25 / 255.0;
+        pict.color.g = 255 / 255.0;
+        pict.color.b = 240 / 255.0;
+    }
+    else
+    {
+        pict.color.r = 150 / 255.0;
+        pict.color.g = 150 / 255.0;
+        pict.color.b = 150 / 255.0;
+    }
+    pict.action = jsk_rviz_plugins::Pictogram::ADD;
+    pict.color.a = 1.0;
+    pict.character = character.c_str();
+    pict_state_pub_.publish(pict);
+}
+
 void MavrosBridge::stateCallback(mavros_msgs::State msg)
 {
     last_state_ = msg;
+    ap_connected_ = msg.connected;
+    // pubPictgramState(msg);
 
     if (!ap_initialized_ && nav_initialized_)
     {
@@ -287,31 +442,16 @@ bool MavrosBridge::activate(bool activate)
     return true;
 }
 
-// bool MavrosBridge::takeoffCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res)
-// {
-//     res.success = takeoff(1.0);
-//     return true;
-// }
-
-// bool MavrosBridge::takeoff(float altitude)
-// {
-//     if(!checkMove())
-//     {
-//         ROS_ERROR("Not ready to takeoff");
-//         return false;
-//     }
-
-//     ROS_INFO("Takeoff to %f", altitude);
-//     geometry_msgs::PoseStamped pose;
-//     pose.pose.position.z = altitude;
-//     setpoint_pos_pub_.publish(pose);
-//     return true;
-// }
-
 void MavrosBridge::setupStreamRate()
 {
     ros::NodeHandle nh;
     ros::Rate rate(1);
+
+    while (ros::ok() && !ap_connected_) {
+        ROS_INFO("Waiting for ap_connected_");
+        ros::spinOnce();
+        rate.sleep();
+    }
 
     while (ros::ok() && !set_msg_rate_client_.waitForExistence(ros::Duration(1.0))) {
         rate.sleep();

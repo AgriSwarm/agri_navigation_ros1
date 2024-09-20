@@ -91,7 +91,7 @@ void GridMap::initMap(ros::NodeHandle &nh)
   md_.proj_points_.resize(640 * 480 / mp_.skip_pixel_ / mp_.skip_pixel_);
   md_.proj_points_cnt_ = 0;
 
-  md_.cam2body_ << 0.0, 0.0, 1.0, 0.0,
+  md_.base2cam_ << 0.0, 0.0, 1.0, 0.0,
       -1.0, 0.0, 0.0, 0.0,
       0.0, -1.0, 0.0, 0.0,
       0.0, 0.0, 0.0, 1.0;
@@ -1000,16 +1000,16 @@ void GridMap::getRegion(Eigen::Vector3d &ori, Eigen::Vector3d &size)
 
 void GridMap::extrinsicCallback(const nav_msgs::OdometryConstPtr &odom)
 {
-  Eigen::Quaterniond cam2body_q = Eigen::Quaterniond(odom->pose.pose.orientation.w,
+  Eigen::Quaterniond base2cam_q = Eigen::Quaterniond(odom->pose.pose.orientation.w,
                                                      odom->pose.pose.orientation.x,
                                                      odom->pose.pose.orientation.y,
                                                      odom->pose.pose.orientation.z);
-  Eigen::Matrix3d cam2body_r_m = cam2body_q.toRotationMatrix();
-  md_.cam2body_.block<3, 3>(0, 0) = cam2body_r_m;
-  md_.cam2body_(0, 3) = odom->pose.pose.position.x;
-  md_.cam2body_(1, 3) = odom->pose.pose.position.y;
-  md_.cam2body_(2, 3) = odom->pose.pose.position.z;
-  md_.cam2body_(3, 3) = 1.0;
+  Eigen::Matrix3d base2cam_r_m = base2cam_q.toRotationMatrix();
+  md_.base2cam_.block<3, 3>(0, 0) = base2cam_r_m;
+  md_.base2cam_(0, 3) = odom->pose.pose.position.x;
+  md_.base2cam_(1, 3) = odom->pose.pose.position.y;
+  md_.base2cam_(2, 3) = odom->pose.pose.position.z;
+  md_.base2cam_(3, 3) = 1.0;
 }
 
 void GridMap::depthOdomCallback(const sensor_msgs::ImageConstPtr &img,
@@ -1028,7 +1028,7 @@ void GridMap::depthOdomCallback(const sensor_msgs::ImageConstPtr &img,
   body2world(2, 3) = odom->pose.pose.position.z;
   body2world(3, 3) = 1.0;
 
-  Eigen::Matrix4d cam_T = body2world * md_.cam2body_;
+  Eigen::Matrix4d cam_T = body2world * md_.base2cam_;
   md_.camera_pos_(0) = cam_T(0, 3);
   md_.camera_pos_(1) = cam_T(1, 3);
   md_.camera_pos_(2) = cam_T(2, 3);

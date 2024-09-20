@@ -14,6 +14,11 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   mavros_msgs
   swarm_msgs
+  dynamic_reconfigure
+)
+
+generate_dynamic_reconfigure_options(
+  cfg/PID.cfg
 )
 
 catkin_package(
@@ -33,9 +38,12 @@ target_link_libraries(hard_mavros_bridge
   ${catkin_LIBRARIES}
 )
 
+add_dependencies(hard_mavros_bridge ${PROJECT_NAME}_gencfg)
+
 catkin_install_python(PROGRAMS
   scripts/mavparam.py
   scripts/external_nav_test.py
   scripts/cmd_cli.py
+  scripts/gps_spy.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

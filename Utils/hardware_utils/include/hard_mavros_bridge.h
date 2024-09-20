@@ -26,6 +26,9 @@
 #include <mavros_msgs/MessageInterval.h>
 #include <mavros_msgs/StreamRate.h>
 
+#include <jsk_rviz_plugins/Pictogram.h>
+#include <jsk_rviz_plugins/PictogramArray.h>
+
 #include <swarm_msgs/SystemStatus.h>
 #include <sensor_msgs/Imu.h>
 #include <message_filters/subscriber.h>
@@ -34,17 +37,29 @@
 
 #include <std_srvs/SetBool.h>
 
+#include <tf/transform_broadcaster.h>
+#include <dynamic_reconfigure/server.h>
+#include <hardware_utils/PIDConfig.h>
+#include <boost/thread/recursive_mutex.hpp>
+
 class MavrosBridge
 {
 public:
     MavrosBridge();
 
+    struct ParamPair {
+        std::string name;
+        double hardware_utils::PIDConfig::*value;
+    };
+
+    static const std::vector<ParamPair> params;
 private:
     void rcCallback(mavros_msgs::RCIn msg);
     // void activateCallback(std_msgs::Bool msg);
     bool activateCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
-    bool takeoffCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
+    // bool takeoffCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
     void stateCallback(mavros_msgs::State msg);
+    void pubPictgramState(mavros_msgs::State msg);
     void hpCallback(mavros_msgs::HomePosition msg);
     void batteryCallback(sensor_msgs::BatteryState msg);
     void odomCallback(nav_msgs::Odometry msg);
@@ -54,15 +69,19 @@ private:
     sensor_msgs::Joy convertRCtoJoy(const mavros_msgs::RCIn& msg);
     void initialSetup(void);
     bool activate(bool activate);
-    bool takeoff(float altitude);
+    // bool takeoff(float altitude);
 
     void setupStreamRate();
     void thermalTimerCallback(const ros::TimerEvent& event);
-    void vioAlignTimerCallback(const ros::TimerEvent& event);
+    // void vioAlignTimerCallback(const ros::TimerEvent& event);
+    void pictStateTimerCallback(const ros::TimerEvent&);
     void publishTemp(const std::string& file_path, ros::Publisher& publisher);
 
+    hardware_utils::PIDConfig getPIDParam();
+
     std::tuple<bool, int, float> getParam(const std::string& param);
-    std::tuple<bool, int, float> setParam(const std::string& param, int value_integer, float value_real);
+    std::tuple<bool, int, float> setParam(const std::string& param, int value_integer, float value_real=0.0f);
+    void configCallback(hardware_utils::PIDConfig& config, uint32_t level);
 
     ros::NodeHandle nh_;
     ros::NodeHandle pnh_;
@@ -75,6 +94,9 @@ private:
     ros::Subscriber battery_sub_, odom_sub_, status_sub_;
     ros::ServiceServer activate_srv_, takeoff_srv_;
 
+    boost::recursive_mutex config_mutex_;
+    dynamic_reconfigure::Server<hardware_utils::PIDConfig> server_;
+    
     // message_filters::Subscriber<geometry_msgs::PoseStamped> pose_sub_;
     // message_filters::Subscriber<sensor_msgs::Imu> imu_sub_;
     std::shared_ptr<message_filters::Subscriber<geometry_msgs::PoseStamped>> pose_sub_;
@@ -84,14 +106,19 @@ private:
 
     ros::Publisher pub_temp0_;
     ros::Publisher pub_temp1_;
-    ros::Timer thermal_timer_, vio_align_timer_;
+    ros::Timer thermal_timer_, vio_align_timer_, pict_state_timer_;
 
-    ros::Publisher set_gp_origin_pub_, odom_pub_, setpoint_pos_pub_, setpoint_raw_pub_;
+    ros::Publisher set_gp_origin_pub_, odom_pub_, setpoint_pos_pub_, setpoint_raw_pub_, pict_state_pub_;
     ros::ServiceClient mode_client_;
     ros::ServiceClient arm_client_;
     ros::ServiceClient set_msg_rate_group_client_;
     ros::ServiceClient set_msg_rate_client_;
-    ros::ServiceClient get_param_client_, set_param_client_;
+    ros::ServiceClient get_param_client_, set_param_client_, pull_param_client_;
+
+    tf::TransformBroadcaster br_;
+    tf::Transform transform_;
+
+    hardware_utils::PIDConfig config_last_;
 
     mavros_msgs::State last_state_;
     nav_msgs::Odometry odom_cur_;
@@ -99,6 +126,8 @@ private:
     bool ap_initialized_{ false };
     bool nav_initialized_{ false };
     bool set_params_{ false };
+    bool ap_connected_{ false };
+    bool init_mavparams_{ false };
     int cells_batt_{ 0 };
     int imu_freq_{ 0 };
     int infra_freq_{ 0 };
