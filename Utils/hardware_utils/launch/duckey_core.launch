@@ -173,11 +173,11 @@
             /camera/depth/image_rect_raw
             /camera/infra1/image_rect_raw
             /camera/infra2/image_rect_raw"
-        if="$(arg rosbag)"/> 
+        if="$(arg rosbag)"/>  -->
 
     <node pkg="rosbag" type="record" name="rosbag_nav_record"
         args="record -o /tmp/nav_record 
             /mavros/local_position/odom
             /mavros/vision_pose/pose" 
-        if="$(arg rosbag)"/>  -->
+        if="$(arg rosbag)"/> 
 </launch>
