@@ -104,7 +104,7 @@ struct MappingData
 
   Eigen::Vector3d camera_pos_, last_camera_pos_;
   Eigen::Matrix3d camera_r_m_, last_camera_r_m_;
-  Eigen::Matrix4d cam2body_;
+  Eigen::Matrix4d base2cam_;
 
   // depth image data
 
@@ -230,7 +230,7 @@ private:
   SynchronizerImageOdom sync_image_odom_;
 
   ros::Subscriber indep_cloud_sub_, indep_odom_sub_, extrinsic_sub_, only_pose_sub_, only_depth_sub_;
-  ros::Publisher map_pub_, map_inf_pub_, delay_pub_;
+  ros::Publisher map_pub_, map_inf_pub_, delay_pub_, cam_pose_pub_;
   ros::Timer occ_timer_, vis_timer_, fading_timer_;
 
   //

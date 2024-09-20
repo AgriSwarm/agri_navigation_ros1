@@ -394,7 +394,7 @@ void odom_callback(const nav_msgs::Odometry::ConstPtr &msg)
     // string vision_s = _drone_id == -1 ? string("vision") : string("vision") + std::to_string(_drone_id);
     // string height_s = _drone_id == -1 ? string("height") : string("height") + std::to_string(_drone_id);
 
-    broadcaster->sendTransform(tf::StampedTransform(transform, msg->header.stamp, string("world"), string("imu")));
+    broadcaster->sendTransform(tf::StampedTransform(transform, msg->header.stamp, string("world"), string("base_link")));
     // broadcaster->sendTransform(tf::StampedTransform(transform45, msg->header.stamp, base_s, laser_s));
     // broadcaster->sendTransform(tf::StampedTransform(transform45, msg->header.stamp, base_s, vision_s));
     // broadcaster->sendTransform(tf::StampedTransform(transform90, msg->header.stamp, base_s, height_s));

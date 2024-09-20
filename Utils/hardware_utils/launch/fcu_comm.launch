@@ -27,7 +27,11 @@
     </node>
 
     <!-- External Pose Test Node -->
+<<<<<<< HEAD
     <!-- <node pkg="hardware_utils" type="external_nav_test.py" name="external_nav_test" output="screen"/>
+=======
+    <node pkg="hardware_utils" type="external_nav_test.py" name="external_nav_test" output="screen"/>
+>>>>>>> bf7b8beec32ea70d2867fe211c16ad6217e05aa9
 
     <node pkg="hardware_utils" type="hard_mavros_bridge" name="mavros_bridge" output="screen">
         <param name="cells_batt" value="3" />

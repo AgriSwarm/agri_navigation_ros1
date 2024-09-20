@@ -28,7 +28,7 @@ DroneDetector::DroneDetector(ros::NodeHandle& nodeHandle)
 
   debug_info_pub_ = nh_.advertise<std_msgs::String>("/debug_info", 50);
 
-  cam2body_ << 0.0, 0.0, 1.0, 0.0,
+  base2cam_ << 0.0, 0.0, 1.0, 0.0,
       -1.0, 0.0, 0.0, 0.0,
       0.0, -1.0, 0.0, 0.0,
       0.0, 0.0, 0.0, 1.0;
@@ -139,7 +139,7 @@ void DroneDetector::rcvMyOdomCallback(const nav_msgs::Odometry& odom)
   body2world(2,3) = my_pose_world_(2);
 
   //convert to cam pose
-  cam2world_ = body2world * cam2body_;
+  cam2world_ = body2world * base2cam_;
   cam2world_quat_ = cam2world_.block<3,3>(0,0);
 
   // my_last_odom_stamp_ = odom.header.stamp;
