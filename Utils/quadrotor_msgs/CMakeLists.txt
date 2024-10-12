@@ -80,6 +80,11 @@ add_message_files(
   TrackingPose.msg
 )
 
+add_service_files(
+  FILES
+  UpdateMode.srv
+)
+
 generate_messages(
     DEPENDENCIES
     geometry_msgs

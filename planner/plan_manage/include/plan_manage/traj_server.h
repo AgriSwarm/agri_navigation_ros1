@@ -11,9 +11,12 @@
 #include <quadrotor_msgs/Position.h>
 #include <quadrotor_msgs/TrackingPose.h>
 #include <quadrotor_msgs/GoalSet.h>
+#include <quadrotor_msgs/UpdateMode.h>
 #include <nav_msgs/Odometry.h>
 #include <tf/transform_datatypes.h>
 #include <visualization_msgs/Marker.h>
+#include <mavros_msgs/PositionTarget.h>
+#include <geometry_msgs/TwistStamped.h>
 
 namespace ego_planner
 {
@@ -25,6 +28,7 @@ enum class NavigationMode
     APPROACH = 2,
     ROOT_TRACKING = 3,
     PURE_TRACKING = 4,
+    HOVERING = 5
 };
 
 struct DroneState
@@ -58,7 +62,8 @@ class TrajServer
         // fake drone
         ros::Publisher fake_pos_cmd_pub_;
         // crazyflie
-        ros::Publisher cf_full_state_cmd_pub_, cf_position_cmd_pub_, goal_pub_,target_marker_pub_;
+        ros::Publisher cf_full_state_cmd_pub_, cf_position_cmd_pub_, goal_pub_,target_marker_pub_, pos_cmd_pub, twist_pub;
+        ros::ServiceServer update_mode_srv_;
         ros::Timer cmd_timer_;
         DroneState tracking_state_, last_cmd_state_, odom_state_;
         boost::shared_ptr<poly_traj::Trajectory> traj_;
@@ -70,7 +75,7 @@ class TrajServer
         int traj_id_;
         int drone_id_;
         Eigen::Vector3d last_goal_pos_;
-        bool first_sensing_, first_root_tracking_;
+        bool first_sensing_, first_root_tracking_, use_pin_cmd_, odom_received_, cmd_received_;
         DroneState last_tracking_goal_;
         NormalPose target_pose_;
 
@@ -78,12 +83,16 @@ class TrajServer
         void polyTrajCallback(const traj_utils::PolyTraj::ConstPtr &msg);
         void heartbeatCallback(const std_msgs::Empty::ConstPtr &msg);
         void targetPoseCallback(const quadrotor_msgs::TrackingPose::ConstPtr &msg);
+        bool updateModeCallback(quadrotor_msgs::UpdateMode::Request& req,
+                        quadrotor_msgs::UpdateMode::Response& res);
         void cmdTimerCallback(const ros::TimerEvent &event);
         void publishCmd(const DroneState &state);
         void publishFakeCmd(const DroneState &state);
         void publishCFCmd(const DroneState &state);
         void publishCFPositionCmd(const DroneState &state);
+        void publishMavrosCmd(const DroneState &state);
         void publishHoverCmd();
+        void publishPinCmd();
         void publishGoal(const Eigen::Vector3d &goal_pos);
         void resetTraj();
         void updateMode(NavigationMode mode);
@@ -105,6 +114,8 @@ class TrajServer
                 return "ROOT_TRACKING";
             case NavigationMode::PURE_TRACKING:
                 return "PURE_TRACKING";
+            case NavigationMode::HOVERING:
+                return "HOVERING";
             default:
                 return "UNKNOWN";
             }

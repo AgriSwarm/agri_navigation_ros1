@@ -56,6 +56,7 @@ namespace ego_planner
     if (target_type_ == TARGET_TYPE::MANUAL_TARGET)
     {
       waypoint_sub_ = nh.subscribe("/goal", 1, &EGOReplanFSM::waypointCallback, this);
+      waypoint_local_sub_ = nh.subscribe("/goal_local", 1, &EGOReplanFSM::waypointLocalCallback, this);
     }
     else if (target_type_ == TARGET_TYPE::PRESET_TARGET)
     {
@@ -631,6 +632,30 @@ namespace ego_planner
     ROS_INFO("Received goal: %f, %f, %f", msg->goal[0], msg->goal[1], msg->goal[2]);
 
     Eigen::Vector3d end_wp(msg->goal[0], msg->goal[1], msg->goal[2]);
+    if (planNextWaypoint(end_wp))
+    {
+      have_trigger_ = true;
+    }
+  }
+
+  void EGOReplanFSM::waypointLocalCallback(const quadrotor_msgs::GoalSetPtr &msg)
+  {
+    if (msg->drone_id != planner_manager_->pp_.drone_id)
+      return;
+
+    if (!have_odom_)
+    {
+      ROS_ERROR("No odometry data!");
+      return;
+    }
+
+    ROS_INFO("Received local goal: %f, %f, %f", msg->goal[0], msg->goal[1], msg->goal[2]);
+
+    float goal_x = odom_pos_(0) + msg->goal[0];
+    float goal_y = odom_pos_(1) + msg->goal[1];
+    float goal_z = odom_pos_(2) + msg->goal[2];
+
+    Eigen::Vector3d end_wp(goal_x, goal_y, goal_z);
     if (planNextWaypoint(end_wp))
     {
       have_trigger_ = true;
