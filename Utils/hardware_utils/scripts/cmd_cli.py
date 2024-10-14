@@ -7,6 +7,8 @@ import termios
 import tty
 from functools import partial
 from mavros_msgs.srv import CommandTOL
+from quadrotor_msgs.msg import GoalSet
+from quadrotor_msgs.srv import UpdateMode, UpdateModeRequest
 
 def getch():
     fd = sys.stdin.fileno()
@@ -75,9 +77,36 @@ def print_status(action, success):
     else:
         print(f"Failed to {action} the MavrosBridge")
 
+def publish_goal(publisher, x, y, z):
+    goal_msg = GoalSet()
+    goal_msg.drone_id = 0
+    goal_msg.goal = [x, y, z]
+    publisher.publish(goal_msg)
+    print(f"Published goal: x={x}, y={y}, z={z}")
+
+def call_hover_service():
+    service_name = '/traj_server/update_mode'
+
+    try:
+        rospy.wait_for_service(service_name, timeout=5.0)  # 5秒のタイムアウトを設定
+    except rospy.ROSException:
+        print(f"Service {service_name} is not available. Timeout occurred.")
+        return False
+    
+    try:
+        hover_service = rospy.ServiceProxy(service_name, UpdateMode)
+        response = hover_service(UpdateModeRequest.HOVERING)
+        return response.success
+    except rospy.ServiceException as e:
+        print(f"Service call failed: {e}")
+        return False
+
 if __name__ == '__main__':
     rospy.init_node('mavros_bridge_client', anonymous=True)
-    print("Press 'A' to activate, 'D' to deactivate, or 'Q' to quit.")
+    goal_publisher = rospy.Publisher('/goal_local_with_id', GoalSet, queue_size=10)
+    
+    print("A: Activate, D: Deactivate, T: Takeoff, L: Land, H: Hover")
+    print("Arrow keys: Move in x-y plane, Q: Quit")
     
     while True:
         char = getch().lower()
@@ -94,8 +123,22 @@ if __name__ == '__main__':
         elif char == 'l':
             result = call_land_service()
             print_status("land", result)
+        elif char == 'h':
+            result = call_hover_service()
+            print_status("hover", result)
+        elif char == '\x1b':
+            next1, next2 = getch(), getch()
+            if next1 == '[':
+                if next2 == 'A':  # Up arrow
+                    publish_goal(goal_publisher, 0.5, 0, 0)
+                elif next2 == 'B':  # Down arrow
+                    publish_goal(goal_publisher, -0.5, 0, 0)
+                elif next2 == 'C':  # Right arrow
+                    publish_goal(goal_publisher, 0, 0.5, 0)
+                elif next2 == 'D':  # Left arrow
+                    publish_goal(goal_publisher, 0, -0.5, 0)
         elif char == 'q':
             print("Quitting...")
             break
         else:
-            print("Invalid input. Press 'A' to activate, 'D' to deactivate, 'T' to takeoff, 'L' to land or 'Q' to quit.")
+            print("Invalid input. Press 'A' to activate, 'D' to deactivate, 'T' to takeoff, 'L' to land, arrow keys to move, or 'Q' to quit.")
