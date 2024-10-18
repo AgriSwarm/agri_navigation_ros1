@@ -121,7 +121,7 @@ hardware_utils::PIDConfig MavrosBridge::getPIDParam() {
     }
     hardware_utils::PIDConfig config;
     std::tuple<bool, int, float> param;
-
+    ros::Duration(2.0).sleep();
     // param = getParam("ATC_ANG_RLL_P");
     // config.ATC_ANG_RLL_P = std::get<1>(param);
     for (const auto& param : params) {
