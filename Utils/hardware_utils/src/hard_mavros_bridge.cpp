@@ -36,7 +36,7 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~"), server_(config_mutex_)
     joy_pub_ = nh_.advertise<sensor_msgs::Joy>("/mavros_bridge/joy", 10);
     set_gp_origin_pub_ = nh_.advertise<geographic_msgs::GeoPointStamped>("/mavros/global_position/set_gp_origin", 10);
     battery_pub_ = nh_.advertise<std_msgs::Float32>("/mavros_bridge/battery", 10);
-    vision_pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("/mavros/vision_pose/pose", 10);
+    // vision_pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("/mavros/vision_pose/pose", 10);
     status_pub_ = nh_.advertise<swarm_msgs::SystemStatus>("/hardware_bridge/status", 10);
     odom_pub_ = nh_.advertise<nav_msgs::Odometry>("/mavros_bridge/ap_odom", 10);
     setpoint_pos_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("/mavros/setpoint_position/local", 10);
@@ -60,7 +60,9 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~"), server_(config_mutex_)
     state_sub_ = nh_.subscribe("/mavros/state", 1, &MavrosBridge::stateCallback, this);
     // hp_sub_ = nh_.subscribe("/mavros/home_position/home", 1, &MavrosBridge::hpCallback, this);
     battery_sub_ = nh_.subscribe("/mavros/battery", 1, &MavrosBridge::batteryCallback, this);
-    odom_sub_ = nh_.subscribe("/mavros_bridge/odom", 1, &MavrosBridge::odomCallback, this);
+    // odom_sub_ = nh_.subscribe("/mavros_bridge/odom", 1, &MavrosBridge::odomCallback, this);
+    vision_pose_sub_ = nh_.subscribe("/mavros/vision_pose/pose", 1, &MavrosBridge::visionPoseCallback, this);
+    
     status_sub_ = nh_.subscribe("/hardware_bridge/status", 1, &MavrosBridge::statusCallback, this);
     // takeoff_srv_ = nh_.advertiseService("/mavros_bridge/takeoff", &MavrosBridge::takeoffCallback, this);
 
@@ -350,6 +352,14 @@ void MavrosBridge::odomCallback(nav_msgs::Odometry msg)
     odom_cur_ = msg;
     // vision_pose_pub_.publish(pose);
 
+    if(!nav_initialized_){
+        ROS_INFO("Nav initialized");
+        nav_initialized_ = true;
+    }
+}
+
+void MavrosBridge::visionPoseCallback(const geometry_msgs::PoseStampedConstPtr& msg)
+{
     if(!nav_initialized_){
         ROS_INFO("Nav initialized");
         nav_initialized_ = true;

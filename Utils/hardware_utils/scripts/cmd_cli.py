@@ -65,7 +65,7 @@ def call_takeoff_service():
     
     try:
         takeoff_cl = rospy.ServiceProxy('/mavros/cmd/takeoff', CommandTOL)
-        response = takeoff_cl(altitude=1, latitude=0, longitude=0, min_pitch=0, yaw=0)
+        response = takeoff_cl(altitude=1.5, latitude=0, longitude=0, min_pitch=0, yaw=0)
         rospy.loginfo(response)
     except rospy.ServiceException as e:
         print("Service call failed: %s"%e)
@@ -85,7 +85,7 @@ def publish_goal(publisher, x, y, z):
     print(f"Published goal: x={x}, y={y}, z={z}")
 
 def call_hover_service():
-    service_name = '/traj_server/update_mode'
+    service_name = '/update_mode'
 
     try:
         rospy.wait_for_service(service_name, timeout=5.0)  # 5秒のタイムアウトを設定
