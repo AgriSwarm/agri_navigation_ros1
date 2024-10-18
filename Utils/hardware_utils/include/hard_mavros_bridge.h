@@ -63,6 +63,7 @@ private:
     void hpCallback(mavros_msgs::HomePosition msg);
     void batteryCallback(sensor_msgs::BatteryState msg);
     void odomCallback(nav_msgs::Odometry msg);
+    void visionPoseCallback(const geometry_msgs::PoseStampedConstPtr& msg);
     void statusCallback(swarm_msgs::SystemStatus msg);
     void poseImuCallback(const geometry_msgs::PoseStampedConstPtr& pose, const sensor_msgs::ImuConstPtr& imu);
     bool checkMove(void);
@@ -91,7 +92,7 @@ private:
     // ros::Subscriber activate_sub_;
     ros::Subscriber state_sub_;
     ros::Subscriber hp_sub_;
-    ros::Subscriber battery_sub_, odom_sub_, status_sub_;
+    ros::Subscriber battery_sub_, odom_sub_, status_sub_, vision_pose_sub_;
     ros::ServiceServer activate_srv_, takeoff_srv_;
 
     boost::recursive_mutex config_mutex_;
