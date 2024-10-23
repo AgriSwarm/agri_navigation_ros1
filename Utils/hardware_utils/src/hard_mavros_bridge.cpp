@@ -22,6 +22,7 @@ const std::vector<MavrosBridge::ParamPair> MavrosBridge::params = {
     {"PSC_ACCZ_P", &hardware_utils::PIDConfig::PSC_ACCZ_P},
     {"PSC_ACCZ_I", &hardware_utils::PIDConfig::PSC_ACCZ_I},
     {"PSC_ACCZ_D", &hardware_utils::PIDConfig::PSC_ACCZ_D},
+    {"VISO_DELAY_MS", &hardware_utils::PIDConfig::VISO_DELAY_MS}
 };
 
 MavrosBridge::MavrosBridge() : nh_(), pnh_("~"), server_(config_mutex_) 
