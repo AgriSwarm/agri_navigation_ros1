@@ -7,6 +7,7 @@ set(CMAKE_CXX_FLAGS "-O3 -Wall -g")
 ADD_COMPILE_OPTIONS(-std=c++14 )
 ADD_COMPILE_OPTIONS(-std=c++14 )
 
+set(JetsonGPIO_DIR "/usr/local/lib/cmake/JetsonGPIO")
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
@@ -15,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   mavros_msgs
   swarm_msgs
   dynamic_reconfigure
+  JetsonGPIO
 )
 
 generate_dynamic_reconfigure_options(
@@ -30,12 +32,14 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  /usr/local/include
 )
 
 add_executable(hard_mavros_bridge src/hard_mavros_bridge.cpp)
 
 target_link_libraries(hard_mavros_bridge
   ${catkin_LIBRARIES}
+  JetsonGPIO
 )
 
 add_dependencies(hard_mavros_bridge ${PROJECT_NAME}_gencfg)

@@ -36,16 +36,20 @@
 #include <message_filters/sync_policies/approximate_time.h>
 
 #include <std_srvs/SetBool.h>
+#include <std_msgs/Duration.h>
 
 #include <tf/transform_broadcaster.h>
 #include <dynamic_reconfigure/server.h>
 #include <hardware_utils/PIDConfig.h>
 #include <boost/thread/recursive_mutex.hpp>
 
+#include <JetsonGPIO.h>
+
 class MavrosBridge
 {
 public:
     MavrosBridge();
+    ~MavrosBridge();
 
     struct ParamPair {
         std::string name;
@@ -134,6 +138,13 @@ private:
     int infra_freq_{ 0 };
     int self_id{ 0 };
     float vio_align_interval_{ 1.0 };
+
+    static const int OUTPUT_PIN = 32;
+    ros::ServiceServer rotate_motor_srv_;
+    bool initGPIO();
+    void cleanupGPIO();
+    bool rotateMotorCallback(const std_srvs::SetBool::Request& req,
+                        std_srvs::SetBool::Response& res);
 };
 
 #endif // HARD_MAVROS_BRIDGE_H

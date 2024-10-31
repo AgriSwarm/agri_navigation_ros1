@@ -76,6 +76,19 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~"), server_(config_mutex_)
     pict_state_timer_ = nh_.createTimer(ros::Duration(1.0), &MavrosBridge::pictStateTimerCallback, this);
     // vio_align_timer_ = nh_.createTimer(ros::Duration(vio_align_interval_), &MavrosBridge::vioAlignTimerCallback, this);
 
+    if (!initGPIO()) {
+        ROS_ERROR("Failed to initialize GPIO");
+        return;
+    }
+    
+    // rotate_motor_srv_ = nh_.advertiseService("/mavros_bridge/rotate_motor", 
+    //                                        &MavrosBridge::rotateMotorCallback, this);
+    rotate_motor_srv_ = nh_.advertiseService<std_srvs::SetBool::Request, 
+                                       std_srvs::SetBool::Response>
+                                      ("rotate_motor",
+                                       boost::bind(&MavrosBridge::rotateMotorCallback, 
+                                                 this, _1, _2));
+
     if (set_params_){
         setupStreamRate();
         hardware_utils::PIDConfig initial_config = getPIDParam();
@@ -517,6 +530,60 @@ void MavrosBridge::setupStreamRate()
     }
 
     ROS_INFO("Stream rate setup complete !");
+}
+
+bool MavrosBridge::initGPIO()
+{
+    try {
+        // GPIOを初期化
+        GPIO::setmode(GPIO::BOARD);
+        GPIO::setup(OUTPUT_PIN, GPIO::OUT);
+        GPIO::PWM pwm(OUTPUT_PIN, 50); // 50Hz
+        pwm.start(0); // デューティ比0%でスタート
+        return true;
+    } catch (const std::exception& e) {
+        ROS_ERROR("GPIO initialization failed: %s", e.what());
+        return false;
+    }
+}
+
+void MavrosBridge::cleanupGPIO()
+{
+    try {
+        GPIO::cleanup();
+    } catch (const std::exception& e) {
+        ROS_ERROR("GPIO cleanup failed: %s", e.what());
+    }
+}
+
+bool MavrosBridge::rotateMotorCallback(const std_srvs::SetBool::Request& req,
+                                      std_srvs::SetBool::Response& res)
+{
+    try {
+        GPIO::PWM pwm(OUTPUT_PIN, 50); // 50Hz
+        
+        // PWMのデューティ比を80%に設定
+        pwm.ChangeDutyCycle(80);
+        
+        // 指定された時間待機
+        ros::Duration(req.data).sleep();
+        
+        // モーターを停止
+        pwm.ChangeDutyCycle(0);
+        
+        res.success = true;
+        return true;
+    } catch (const std::exception& e) {
+        ROS_ERROR("Motor control failed: %s", e.what());
+        res.success = false;
+        return false;
+    }
+}
+
+// デストラクタでGPIOをクリーンアップ
+MavrosBridge::~MavrosBridge()
+{
+    cleanupGPIO();
 }
 
 int main(int argc, char** argv)
