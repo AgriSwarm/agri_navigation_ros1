@@ -483,7 +483,7 @@ void MavrosBridge::setupStreamRate()
     }
     
     // mavros_msgs::MessageInterval msg_interval_srv;
-    ROS_INFO("Set Battery message rate to %d Hz", 5);
+    ROS_INFO("Set Battery message rate to %d Hz", infra_freq_);
     msg_interval_srv.request.message_id = 147;
     msg_interval_srv.request.message_rate = infra_freq_;
     if (!set_msg_rate_client_.call(msg_interval_srv)) {
@@ -492,7 +492,7 @@ void MavrosBridge::setupStreamRate()
     }
 
     // mavros_msgs::MessageInterval msg_interval_srv;
-    ROS_INFO("Set Local Position message rate to %d Hz", 5);
+    ROS_INFO("Set Local Position message rate to %d Hz", infra_freq_);
     msg_interval_srv.request.message_id = 32;
     msg_interval_srv.request.message_rate = infra_freq_;
     if (!set_msg_rate_client_.call(msg_interval_srv)) {
@@ -500,7 +500,7 @@ void MavrosBridge::setupStreamRate()
         return;
     }
 
-    ROS_INFO("Set Attitude message rate to %d Hz", 5);
+    ROS_INFO("Set Attitude message rate to %d Hz", infra_freq_);
     msg_interval_srv.request.message_id = 30;
     msg_interval_srv.request.message_rate = infra_freq_;
     if (!set_msg_rate_client_.call(msg_interval_srv)) {
@@ -508,7 +508,7 @@ void MavrosBridge::setupStreamRate()
         return;
     }
 
-    ROS_INFO("Set Attitude Quaternion message rate to %d Hz", 5);
+    ROS_INFO("Set Attitude Quaternion message rate to %d Hz", infra_freq_);
     msg_interval_srv.request.message_id = 31;
     msg_interval_srv.request.message_rate = infra_freq_;
     if (!set_msg_rate_client_.call(msg_interval_srv)) {

@@ -6,7 +6,7 @@ output_pin = 32
 input_pin = 31
 
 def pwm_output():
-    p = GPIO.PWM(output_pin, 480)
+    p = GPIO.PWM(output_pin, 50)
     p.start(80)
     try:
         while True:

@@ -1,3 +1,4 @@
+
 <launch>
 	<!-- vim: set ft=xml noet : -->
 	<!-- example launch script for ArduPilot based FCU's -->
@@ -12,6 +13,7 @@
 	<arg name="respawn_mavros" default="false" />
     <arg name="set_params" default="true" />
     <arg name="imu_freq" default="200"/>
+    <arg name="infra_freq" default="50"/>
     <arg name="pluginlists_yaml" default="$(find agri_resources)/config/mavros/apm_pluginlists.yaml" />
 	<arg name="config_yaml" default="$(find agri_resources)/config/mavros/apm_config.yaml" />
     <arg name="self_id" default="0"/>
@@ -161,6 +163,7 @@
         <remap from="/mavros_bridge/odom" to="/d2vins/odometry"/>
         <param name="cells_batt" value="3" />
         <param name="imu_freq" value="$(arg imu_freq)" />
+	    <param name="infra_freq" value="$(arg infra_freq)" />
         <param name="set_params" value="$(arg set_params)" />
         <param name="drone_id" value="$(arg self_id)" type="int"/>
         <param name="vio_align_interval" value="1000000.0" />
