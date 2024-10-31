@@ -3,6 +3,8 @@
 
 #include <fstream>
 #include <string>
+#include <cstdlib>
+#include <ros/package.h>
 
 #include "ros/ros.h"
 #include <mavros_msgs/RCIn.h>

@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  roslib
   tf
   mavros_msgs
   swarm_msgs
@@ -38,7 +39,7 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
   # LIBRARIES sensor_visualization
-  CATKIN_DEPENDS roscpp swarm_msgs message_runtime
+  CATKIN_DEPENDS roscpp swarm_msgs message_runtime roslib
 )
 
 include_directories(
