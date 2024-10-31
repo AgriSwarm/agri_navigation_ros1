@@ -560,6 +560,7 @@ bool MavrosBridge::rotateMotorCallback(hardware_utils::RotateMotor::Request& req
                                       hardware_utils::RotateMotor::Response& res)
 {
     try {
+        ROS_INFO("Rotate motor for %f seconds", req.duration.toSec());
         GPIO::PWM pwm(OUTPUT_PIN, 50); // 50Hz
         
         // PWMのデューティ比を80%に設定
