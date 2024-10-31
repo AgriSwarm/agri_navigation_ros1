@@ -1,0 +1,4 @@
+float32 duration  # 回転時間（秒）
+---
+bool success      # 実行結果
+string message    # 結果メッセージ

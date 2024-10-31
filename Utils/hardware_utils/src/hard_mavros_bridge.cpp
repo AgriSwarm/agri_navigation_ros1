@@ -81,13 +81,13 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~"), server_(config_mutex_)
         return;
     }
     
-    // rotate_motor_srv_ = nh_.advertiseService("/mavros_bridge/rotate_motor", 
-    //                                        &MavrosBridge::rotateMotorCallback, this);
-    rotate_motor_srv_ = nh_.advertiseService<std_srvs::SetBool::Request, 
-                                       std_srvs::SetBool::Response>
-                                      ("rotate_motor",
-                                       boost::bind(&MavrosBridge::rotateMotorCallback, 
-                                                 this, _1, _2));
+    rotate_motor_srv_ = nh_.advertiseService("rotate_motor", 
+            &MavrosBridge::rotateMotorCallback, this);
+    // rotate_motor_srv_ = nh_.advertiseService<std_srvs::SetBool::Request, 
+    //                                    std_srvs::SetBool::Response>
+    //                                   ("rotate_motor",
+    //                                    boost::bind(&MavrosBridge::rotateMotorCallback, 
+    //                                              this, _1, _2));
 
     if (set_params_){
         setupStreamRate();
@@ -556,8 +556,8 @@ void MavrosBridge::cleanupGPIO()
     }
 }
 
-bool MavrosBridge::rotateMotorCallback(const std_srvs::SetBool::Request& req,
-                                      std_srvs::SetBool::Response& res)
+bool MavrosBridge::rotateMotorCallback(hardware_utils::RotateMotor::Request& req,
+                                      hardware_utils::RotateMotor::Response& res)
 {
     try {
         GPIO::PWM pwm(OUTPUT_PIN, 50); // 50Hz
@@ -566,7 +566,7 @@ bool MavrosBridge::rotateMotorCallback(const std_srvs::SetBool::Request& req,
         pwm.ChangeDutyCycle(80);
         
         // 指定された時間待機
-        ros::Duration(req.data).sleep();
+        ros::Duration(req.duration).sleep();
         
         // モーターを停止
         pwm.ChangeDutyCycle(0);

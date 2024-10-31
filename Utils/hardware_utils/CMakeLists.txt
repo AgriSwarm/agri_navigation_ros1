@@ -17,16 +17,28 @@ find_package(catkin REQUIRED COMPONENTS
   swarm_msgs
   dynamic_reconfigure
   JetsonGPIO
+  message_generation
 )
 
 generate_dynamic_reconfigure_options(
   cfg/PID.cfg
 )
 
+add_service_files(
+  FILES
+  RotateMotor.srv
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
+
 catkin_package(
   INCLUDE_DIRS include
+  LIBRARIES ${PROJECT_NAME}
   # LIBRARIES sensor_visualization
-  CATKIN_DEPENDS roscpp swarm_msgs
+  CATKIN_DEPENDS roscpp swarm_msgs message_runtime
 )
 
 include_directories(
@@ -43,6 +55,7 @@ target_link_libraries(hard_mavros_bridge
 )
 
 add_dependencies(hard_mavros_bridge ${PROJECT_NAME}_gencfg)
+add_dependencies(hard_mavros_bridge ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 catkin_install_python(PROGRAMS
   scripts/mavparam.py

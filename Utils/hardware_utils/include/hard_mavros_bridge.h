@@ -44,6 +44,7 @@
 #include <boost/thread/recursive_mutex.hpp>
 
 #include <JetsonGPIO.h>
+#include <hardware_utils/RotateMotor.h>
 
 class MavrosBridge
 {
@@ -143,8 +144,8 @@ private:
     ros::ServiceServer rotate_motor_srv_;
     bool initGPIO();
     void cleanupGPIO();
-    bool rotateMotorCallback(const std_srvs::SetBool::Request& req,
-                        std_srvs::SetBool::Response& res);
+    bool rotateMotorCallback(hardware_utils::RotateMotor::Request& req,
+                        hardware_utils::RotateMotor::Response& res);
 };
 
 #endif // HARD_MAVROS_BRIDGE_H
