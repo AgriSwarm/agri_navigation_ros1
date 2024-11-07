@@ -98,6 +98,17 @@ std::tuple<bool, int, float> MavrosBridge::setParam(const std::string& param, in
         if (srv.response.success)
         {
             ROS_INFO("Successfully set %s to int: %ld, real: %f", param.c_str(), srv.response.value.integer, srv.response.value.real);
+            try {
+                YAML::Node config = YAML::LoadFile(yaml_path_);
+                config[param] = value_real;
+                std::ofstream fout(yaml_path_);
+                fout << config;
+                fout.close();
+                
+                ROS_INFO("Updated YAML file with new parameter value");
+            } catch (const YAML::Exception& e) {
+                ROS_ERROR("Failed to update YAML file: %s", e.what());
+            }
         }
         else
         {
@@ -189,7 +200,7 @@ void MavrosBridge::getResourcePath()
     }
     
     // configファイルのパスを構築
-    yaml_path_ = package_path + "/config/ardupilot/vanilla.yaml";
+    yaml_path_ = package_path + "/config/ardupilot/" + ap_param_type_ + ".yaml";
     ROS_INFO("YAML path: %s", yaml_path_.c_str());
 }
 

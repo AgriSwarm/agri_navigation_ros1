@@ -131,7 +131,7 @@ private:
     tf::Transform transform_;
 
     hardware_utils::PIDConfig config_last_;
-    std::string yaml_path_;
+    std::string yaml_path_, ap_param_type_;
 
     mavros_msgs::State last_state_;
     nav_msgs::Odometry odom_cur_;

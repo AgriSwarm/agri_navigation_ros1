@@ -8,6 +8,7 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~"), server_(config_mutex_)
     pnh_.param<int>("drone_id", self_id, 0);
     pnh_.param<bool>("set_params", set_params_, false);
     pnh_.param<float>("vio_align_interval", vio_align_interval_, 1.0);
+    pnh_.param<std::string>("ap_param_type", ap_param_type_, "vanilla");
 
     joy_pub_ = nh_.advertise<sensor_msgs::Joy>("/mavros_bridge/joy", 10);
     set_gp_origin_pub_ = nh_.advertise<geographic_msgs::GeoPointStamped>("/mavros/global_position/set_gp_origin", 10);
