@@ -5,6 +5,7 @@
 #include <string>
 #include <cstdlib>
 #include <ros/package.h>
+#include <yaml-cpp/yaml.h>
 
 #include "ros/ros.h"
 #include <mavros_msgs/RCIn.h>
@@ -79,6 +80,9 @@ private:
     bool activate(bool activate);
     // bool takeoff(float altitude);
 
+    void getResourcePath();
+    void pullAndSetParams();
+
     void setupStreamRate();
     void thermalTimerCallback(const ros::TimerEvent& event);
     // void vioAlignTimerCallback(const ros::TimerEvent& event);
@@ -127,6 +131,7 @@ private:
     tf::Transform transform_;
 
     hardware_utils::PIDConfig config_last_;
+    std::string yaml_path_;
 
     mavros_msgs::State last_state_;
     nav_msgs::Odometry odom_cur_;
