@@ -24,7 +24,7 @@ TrajServer::TrajServer(ros::NodeHandle &nh) : nh_(nh)
 
     setpoint_raw_pub = nh.advertise<mavros_msgs::PositionTarget>("/setpoint_raw", 50);
     setpoint_pos_pub = nh.advertise<geometry_msgs::PoseStamped>("/setpoint_position", 50);
-    status_pub_ = nh.advertise<swarm_msgs::SystemStatus>("status", 50);
+    status_pub_ = nh.advertise<swarm_msgs::SystemStatus>("system_status", 50);
     
     twist_pub = nh.advertise<geometry_msgs::TwistStamped>("/twist_cmd", 50);
     // fake_pos_cmd_pub_ = nh_.advertise<quadrotor_msgs::PositionCommand>("/position_cmd", 1);
