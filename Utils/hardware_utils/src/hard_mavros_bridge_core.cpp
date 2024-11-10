@@ -16,7 +16,7 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~"), server_(config_mutex_)
     set_gp_origin_pub_ = nh_.advertise<geographic_msgs::GeoPointStamped>("/mavros/global_position/set_gp_origin", 10);
     battery_pub_ = nh_.advertise<std_msgs::Float32>("/mavros_bridge/battery", 10);
     // vision_pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("/mavros/vision_pose/pose", 10);
-    status_pub_ = nh_.advertise<swarm_msgs::SystemStatus>("/hardware_bridge/status", 10);
+    status_pub_ = nh_.advertise<swarm_msgs::SystemStatus>("/hardware_bridge/system_status", 10);
     odom_pub_ = nh_.advertise<nav_msgs::Odometry>("/mavros_bridge/ap_odom", 10);
     setpoint_pos_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("/mavros/setpoint_position/local", 10);
     setpoint_raw_pub_ = nh_.advertise<mavros_msgs::PositionTarget>("/mavros/setpoint_raw/local", 10);
@@ -43,7 +43,7 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~"), server_(config_mutex_)
     vision_pose_sub_ = nh_.subscribe("/mavros/vision_pose/pose", 1, &MavrosBridge::visionPoseCallback, this);
     ap_ekf_pose_sub_ = nh_.subscribe("/mavros/local_position/pose", 1, &MavrosBridge::APEKFPoseCallback, this);
     
-    status_sub_ = nh_.subscribe("/traj_server/status", 1, &MavrosBridge::statusCallback, this);
+    status_sub_ = nh_.subscribe("/traj_server/system_status", 1, &MavrosBridge::statusCallback, this);
     // takeoff_srv_ = nh_.advertiseService("/mavros_bridge/takeoff", &MavrosBridge::takeoffCallback, this);
 
     takeoff_mand_sub_ = nh_.subscribe("/hardware_bridge/takeoff_mand", 1, &MavrosBridge::takeoffMandCallback, this);
