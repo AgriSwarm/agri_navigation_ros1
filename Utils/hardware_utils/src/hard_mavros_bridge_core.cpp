@@ -43,6 +43,11 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~"), server_(config_mutex_)
     status_sub_ = nh_.subscribe("/hardware_bridge/status", 1, &MavrosBridge::statusCallback, this);
     // takeoff_srv_ = nh_.advertiseService("/mavros_bridge/takeoff", &MavrosBridge::takeoffCallback, this);
 
+    takeoff_mand_sub_ = nh_.subscribe("/hardware_bridge/takeoff_mand", 1, &MavrosBridge::takeoffMandCallback, this);
+    land_mand_sub_ = nh_.subscribe("/hardware_bridge/land_mand", 1, &MavrosBridge::landMandCallback, this);
+    takeoff_client_ = nh_.serviceClient<mavros_msgs::CommandTOL>("/mavros/cmd/takeoff");
+    land_client_ = nh_.serviceClient<mavros_msgs::CommandTOL>("/mavros/cmd/land");
+
     pose_sub_.reset(new message_filters::Subscriber<geometry_msgs::PoseStamped>(nh_, "/mavros/local_position/pose", 1));
     imu_sub_.reset(new message_filters::Subscriber<sensor_msgs::Imu>(nh_, "/mavros/imu/data", 1));
     sync_pose_imu_.reset(new message_filters::Synchronizer<SyncPolicyPoseImu>(SyncPolicyPoseImu(10), *pose_sub_, *imu_sub_));

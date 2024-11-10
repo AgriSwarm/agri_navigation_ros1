@@ -54,6 +54,48 @@ bool MavrosBridge::activateCallback(std_srvs::SetBool::Request& req, std_srvs::S
     return true;
 }
 
+void MavrosBridge::takeoffMandCallback(swarm_msgs::CommandTOL msg)
+{
+    if(msg.drone_id != self_id){
+        return;
+    }
+    if(activate(true)){
+        mavros_msgs::CommandTOL mavros_msg;
+        mavros_msg.request.altitude = msg.altitude;
+        mavros_msg.request.latitude = msg.latitude;
+        mavros_msg.request.longitude = msg.longitude;
+        mavros_msg.request.min_pitch = msg.min_pitch;
+        mavros_msg.request.yaw = msg.yaw;
+        ros::Duration(1.0).sleep();
+        if (takeoff_client_.call(mavros_msg)){
+            ROS_INFO("Takeoff command sent");
+        }else{
+            ROS_ERROR("Failed to send takeoff command");
+        }
+    }else{
+        ROS_ERROR("Failed to activate");
+    }
+}
+
+void MavrosBridge::landMandCallback(swarm_msgs::CommandTOL msg)
+{
+    if(msg.drone_id != self_id){
+        return;
+    }
+    mavros_msgs::CommandTOL mavros_msg;
+    mavros_msg.request.altitude = msg.altitude;
+    mavros_msg.request.latitude = msg.latitude;
+    mavros_msg.request.longitude = msg.longitude;
+    mavros_msg.request.min_pitch = msg.min_pitch;
+    mavros_msg.request.yaw = msg.yaw;
+
+    if(land_client_.call(mavros_msg)){
+        ROS_INFO("Land command sent");
+    }else{
+        ROS_ERROR("Failed to send land command");
+    }
+}
+
 void MavrosBridge::pictStateTimerCallback(const ros::TimerEvent&)
 {
     if(!nav_initialized_){

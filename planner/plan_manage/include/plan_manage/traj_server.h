@@ -17,6 +17,7 @@
 #include <visualization_msgs/Marker.h>
 #include <mavros_msgs/PositionTarget.h>
 #include <geometry_msgs/TwistStamped.h>
+#include <swarm_msgs/PositionCommand.h>
 
 namespace ego_planner
 {
@@ -28,7 +29,8 @@ enum class NavigationMode
     APPROACH = 2,
     ROOT_TRACKING = 3,
     PURE_TRACKING = 4,
-    HOVERING = 5
+    HOVERING = 5,
+    POSHOLD = 6
 };
 
 struct DroneState
@@ -58,11 +60,11 @@ class TrajServer
 
     private:
         ros::NodeHandle nh_;
-        ros::Subscriber poly_traj_sub_, target_pose_sub_, heartbeat_sub_, odom_sub_;
+        ros::Subscriber poly_traj_sub_, target_pose_sub_, heartbeat_sub_, odom_sub_, setpoint_pos_sub_;
         // fake drone
         ros::Publisher fake_pos_cmd_pub_;
         // crazyflie
-        ros::Publisher cf_full_state_cmd_pub_, cf_position_cmd_pub_, goal_pub_,target_marker_pub_, pos_cmd_pub, twist_pub;
+        ros::Publisher cf_full_state_cmd_pub_, cf_position_cmd_pub_, goal_pub_,target_marker_pub_, setpoint_raw_pub, setpoint_pos_pub, twist_pub;
         ros::ServiceServer update_mode_srv_;
         ros::Timer cmd_timer_;
         DroneState tracking_state_, last_cmd_state_, odom_state_;
@@ -83,13 +85,15 @@ class TrajServer
         void polyTrajCallback(const traj_utils::PolyTraj::ConstPtr &msg);
         void heartbeatCallback(const std_msgs::Empty::ConstPtr &msg);
         void targetPoseCallback(const quadrotor_msgs::TrackingPose::ConstPtr &msg);
+        void setpointPosCallback(const swarm_msgs::PositionCommand::ConstPtr &msg);
         bool updateModeCallback(quadrotor_msgs::UpdateMode::Request& req,
                         quadrotor_msgs::UpdateMode::Response& res);
+
         void cmdTimerCallback(const ros::TimerEvent &event);
         void publishCmd(const DroneState &state);
         void publishFakeCmd(const DroneState &state);
-        void publishCFCmd(const DroneState &state);
-        void publishCFPositionCmd(const DroneState &state);
+        // void publishCFCmd(const DroneState &state);
+        // void publishCFPositionCmd(const DroneState &state);
         void publishMavrosCmd(const DroneState &state);
         void publishHoverCmd();
         void publishPinCmd();
@@ -116,6 +120,8 @@ class TrajServer
                 return "PURE_TRACKING";
             case NavigationMode::HOVERING:
                 return "HOVERING";
+            case NavigationMode::POSHOLD:
+                return "POSHOLD";
             default:
                 return "UNKNOWN";
             }
