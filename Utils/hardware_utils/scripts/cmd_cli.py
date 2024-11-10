@@ -193,7 +193,7 @@ class MavrosBridgeClient:
         
         try:
             hover_service = rospy.ServiceProxy(service_name, UpdateMode)
-            response = hover_service(UpdateModeRequest.HOVERING)
+            response = hover_service(UpdateModeRequest.HOVER)
             return response.success
         except rospy.ServiceException as e:
             print(f"Service call failed: {e}")

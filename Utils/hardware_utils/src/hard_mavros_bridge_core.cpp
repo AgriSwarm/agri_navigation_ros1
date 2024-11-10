@@ -10,6 +10,8 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~"), server_(config_mutex_)
     pnh_.param<float>("vio_align_interval", vio_align_interval_, 1.0);
     pnh_.param<std::string>("ap_param_type", ap_param_type_, "vanilla");
 
+    status_cur_.drone_id = self_id;
+
     joy_pub_ = nh_.advertise<sensor_msgs::Joy>("/mavros_bridge/joy", 10);
     set_gp_origin_pub_ = nh_.advertise<geographic_msgs::GeoPointStamped>("/mavros/global_position/set_gp_origin", 10);
     battery_pub_ = nh_.advertise<std_msgs::Float32>("/mavros_bridge/battery", 10);
@@ -39,8 +41,9 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~"), server_(config_mutex_)
     battery_sub_ = nh_.subscribe("/mavros/battery", 1, &MavrosBridge::batteryCallback, this);
     // odom_sub_ = nh_.subscribe("/mavros_bridge/odom", 1, &MavrosBridge::odomCallback, this);
     vision_pose_sub_ = nh_.subscribe("/mavros/vision_pose/pose", 1, &MavrosBridge::visionPoseCallback, this);
+    ap_ekf_pose_sub_ = nh_.subscribe("/mavros/local_position/pose", 1, &MavrosBridge::APEKFPoseCallback, this);
     
-    status_sub_ = nh_.subscribe("/hardware_bridge/status", 1, &MavrosBridge::statusCallback, this);
+    status_sub_ = nh_.subscribe("/traj_server/status", 1, &MavrosBridge::statusCallback, this);
     // takeoff_srv_ = nh_.advertiseService("/mavros_bridge/takeoff", &MavrosBridge::takeoffCallback, this);
 
     takeoff_mand_sub_ = nh_.subscribe("/hardware_bridge/takeoff_mand", 1, &MavrosBridge::takeoffMandCallback, this);
@@ -118,13 +121,13 @@ bool MavrosBridge::activate(bool activate)
         return false;
     }
 
-    if (activate)
-    {
-        swarm_msgs::SystemStatus status;
-        status.status_id = swarm_msgs::SystemStatus::ACTIVATE;
-        status.drone_id = self_id;
-        status_pub_.publish(status);
-    }
+    // if (activate)
+    // {
+    //     swarm_msgs::SystemStatus status;
+    //     status.status_id = swarm_msgs::SystemStatus::ACTIVATE;
+    //     status.drone_id = self_id;
+    //     status_pub_.publish(status);
+    // }
     return true;
 }
 

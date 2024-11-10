@@ -18,18 +18,19 @@
 #include <mavros_msgs/PositionTarget.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <swarm_msgs/PositionCommand.h>
+#include <swarm_msgs/SystemStatus.h>
 
 namespace ego_planner
 {
 
 enum class NavigationMode
 { 
-    INACTIVE = 0,
+    IDLE = 0,
     SEARCH = 1,
     APPROACH = 2,
-    ROOT_TRACKING = 3,
-    PURE_TRACKING = 4,
-    HOVERING = 5,
+    ROOT_TRACK = 3,
+    PURE_TRACK = 4,
+    HOVER = 5,
     POSHOLD = 6
 };
 
@@ -62,7 +63,7 @@ class TrajServer
         ros::NodeHandle nh_;
         ros::Subscriber poly_traj_sub_, target_pose_sub_, heartbeat_sub_, odom_sub_, setpoint_pos_sub_;
         // fake drone
-        ros::Publisher fake_pos_cmd_pub_;
+        ros::Publisher fake_pos_cmd_pub_, status_pub_;
         // crazyflie
         ros::Publisher cf_full_state_cmd_pub_, cf_position_cmd_pub_, goal_pub_,target_marker_pub_, setpoint_raw_pub, setpoint_pos_pub, twist_pub;
         ros::ServiceServer update_mode_srv_;
@@ -80,6 +81,7 @@ class TrajServer
         bool first_sensing_, first_root_tracking_, use_pin_cmd_, odom_received_, cmd_received_;
         DroneState last_tracking_goal_;
         NormalPose target_pose_;
+        swarm_msgs::SystemStatus status_cur_;
 
         void odomCallback(const nav_msgs::Odometry::ConstPtr &msg);
         void polyTrajCallback(const traj_utils::PolyTraj::ConstPtr &msg);
@@ -108,18 +110,18 @@ class TrajServer
         std::string modeToString(NavigationMode mode){
             switch (mode)
             {
-            case NavigationMode::INACTIVE:
-                return "INACTIVE";
+            case NavigationMode::IDLE:
+                return "IDLE";
             case NavigationMode::SEARCH:
                 return "SEARCH";
             case NavigationMode::APPROACH:
                 return "APPROACH";
-            case NavigationMode::ROOT_TRACKING:
-                return "ROOT_TRACKING";
-            case NavigationMode::PURE_TRACKING:
-                return "PURE_TRACKING";
-            case NavigationMode::HOVERING:
-                return "HOVERING";
+            case NavigationMode::ROOT_TRACK:
+                return "ROOT_TRACK";
+            case NavigationMode::PURE_TRACK:
+                return "PURE_TRACK";
+            case NavigationMode::HOVER:
+                return "HOVER";
             case NavigationMode::POSHOLD:
                 return "POSHOLD";
             default:

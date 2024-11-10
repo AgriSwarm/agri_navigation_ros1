@@ -32,11 +32,13 @@ void TrajServer::updateMode(NavigationMode mode)
         return;
     }
     // AnyMode -> ROOT_TRACKING
-    if(mode == NavigationMode::ROOT_TRACKING){
+    if(mode == NavigationMode::ROOT_TRACK){
         first_root_tracking_ = true;
     }
     ROS_INFO("[traj_server] Mode changed from %s to %s", modeToString(mode_).c_str(), modeToString(mode).c_str());
     mode_ = mode;
+    status_cur_.nav_status = modeToString(mode_);
+    status_pub_.publish(status_cur_);
 }
 
 DroneState TrajServer::computeTrackingState(const quadrotor_msgs::TrackingPose::ConstPtr &msg)
@@ -90,7 +92,7 @@ std::pair<double, double> TrajServer::calculate_yaw(double t_cur, NavigationMode
     // TODO: implement this
     double yaw = 0.0;
     double yaw_rate = 0.0;
-    if (mode == NavigationMode::ROOT_TRACKING)
+    if (mode == NavigationMode::ROOT_TRACK)
     {
         Eigen::Vector3d cmd_pos = traj_->getPos(t_cur);
         double y = target_pose_.center(1) - cmd_pos(1);

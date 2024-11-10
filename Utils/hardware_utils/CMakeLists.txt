@@ -74,6 +74,7 @@ catkin_install_python(PROGRAMS
   scripts/mavparam.py
   scripts/external_nav_test.py
   scripts/cmd_cli.py
+  scripts/lcm_cmd_cli.py
   scripts/gps_spy.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
