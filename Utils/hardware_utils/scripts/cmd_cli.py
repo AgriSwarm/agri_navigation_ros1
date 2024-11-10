@@ -9,6 +9,7 @@ from functools import partial
 from mavros_msgs.srv import CommandTOL
 from quadrotor_msgs.msg import GoalSet
 from quadrotor_msgs.srv import UpdateMode, UpdateModeRequest
+from hardware_utils.srv import RotateMotor
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
 from visualization_msgs.msg import Marker
@@ -38,7 +39,10 @@ class MavrosBridgeClient:
         self.odom_cur = msg
 
     def publish_setpoint(self, dx=0.0, dy=0.0, dz=0.0):
-        if not self.init_pose_pid and self.odom_cur is not None:
+        if self.odom_cur is None:
+            print("No odometry data received yet.")
+            return
+        if not self.init_pose_pid:
             self.position_target = np.array([
                 self.odom_cur.pose.pose.position.x,
                 self.odom_cur.pose.pose.position.y,
@@ -143,7 +147,7 @@ class MavrosBridgeClient:
         
         try:
             takeoff_cl = rospy.ServiceProxy('/mavros/cmd/takeoff', CommandTOL)
-            response = takeoff_cl(altitude=1.5, latitude=0, longitude=0, min_pitch=0, yaw=0)
+            response = takeoff_cl(altitude=1.0, latitude=0, longitude=0, min_pitch=0, yaw=0)
             rospy.loginfo(response)
             return True
         except rospy.ServiceException as e:
@@ -155,6 +159,21 @@ class MavrosBridgeClient:
             print(f"Successfully {action} the MavrosBridge")
         else:
             print(f"Failed to {action} the MavrosBridge")
+
+    def call_shot_service(self):
+        service_name = 'rotate_motor'
+        try:
+            rospy.wait_for_service(service_name, timeout=5.0)
+        except rospy.ROSException:
+            print(f"Service {service_name} is not available. Timeout occurred.")
+            return False
+        try:
+            shot_service = rospy.ServiceProxy(service_name, RotateMotor)
+            response = shot_service(duration=1.0)
+            return response.success
+        except rospy.ServiceException as e:
+            print(f"Service call failed: {e}")
+            return False
 
     def publish_goal(self, x, y, z):
         goal_msg = GoalSet()
@@ -186,6 +205,8 @@ class MavrosBridgeClient:
         
         while True:
             char = self.getch().lower()
+            print(f"Pressed: {char}")
+            print(f"char == '1': {char == '1'}")
             
             if char == 'a':
                 result = self.call_activate_service(True)
@@ -199,9 +220,16 @@ class MavrosBridgeClient:
             elif char == 'l':
                 result = self.call_land_service()
                 self.print_status("land", result)
+            elif char == 's':
+                result = self.call_shot_service()
+                self.print_status("shot", result)
             elif char == 'h':
                 result = self.call_hover_service()
                 self.print_status("hover", result)
+            elif char == 'k':
+                self.publish_setpoint(dz=0.1)
+            elif char == 'm':
+                self.publish_setpoint(dz=-0.1)
             elif char == '\x1b':
                 next1, next2 = self.getch(), self.getch()
                 if next1 == '[':

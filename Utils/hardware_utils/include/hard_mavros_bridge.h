@@ -5,6 +5,7 @@
 #include <string>
 #include <cstdlib>
 #include <ros/package.h>
+#include <yaml-cpp/yaml.h>
 
 #include "ros/ros.h"
 #include <mavros_msgs/RCIn.h>
@@ -16,6 +17,8 @@
 #include <mavros_msgs/ParamGet.h>
 #include <mavros_msgs/ParamSet.h>
 #include <mavros_msgs/PositionTarget.h>
+#include <mavros_msgs/CommandTOL.h>
+
 #include <sensor_msgs/Joy.h>
 #include <nav_msgs/Odometry.h>
 #include <std_msgs/Bool.h>
@@ -32,6 +35,7 @@
 #include <jsk_rviz_plugins/PictogramArray.h>
 
 #include <swarm_msgs/SystemStatus.h>
+#include <swarm_msgs/CommandTOL.h>
 #include <sensor_msgs/Imu.h>
 #include <message_filters/subscriber.h>
 #include <message_filters/synchronizer.h>
@@ -73,11 +77,17 @@ private:
     void visionPoseCallback(const geometry_msgs::PoseStampedConstPtr& msg);
     void statusCallback(swarm_msgs::SystemStatus msg);
     void poseImuCallback(const geometry_msgs::PoseStampedConstPtr& pose, const sensor_msgs::ImuConstPtr& imu);
+    void landMandCallback(swarm_msgs::CommandTOL msg);
+    void takeoffMandCallback(swarm_msgs::CommandTOL msg);
+
     bool checkMove(void);
     sensor_msgs::Joy convertRCtoJoy(const mavros_msgs::RCIn& msg);
     void initialSetup(void);
     bool activate(bool activate);
     // bool takeoff(float altitude);
+
+    void getResourcePath();
+    void pullAndSetParams();
 
     void setupStreamRate();
     void thermalTimerCallback(const ros::TimerEvent& event);
@@ -99,8 +109,9 @@ private:
     // ros::Subscriber activate_sub_;
     ros::Subscriber state_sub_;
     ros::Subscriber hp_sub_;
-    ros::Subscriber battery_sub_, odom_sub_, status_sub_, vision_pose_sub_;
+    ros::Subscriber battery_sub_, odom_sub_, status_sub_, vision_pose_sub_, takeoff_mand_sub_, land_mand_sub_;
     ros::ServiceServer activate_srv_, takeoff_srv_;
+    ros::ServiceClient takeoff_client_, land_client_;
 
     boost::recursive_mutex config_mutex_;
     dynamic_reconfigure::Server<hardware_utils::PIDConfig> server_;
@@ -127,6 +138,7 @@ private:
     tf::Transform transform_;
 
     hardware_utils::PIDConfig config_last_;
+    std::string yaml_path_, ap_param_type_;
 
     mavros_msgs::State last_state_;
     nav_msgs::Odometry odom_cur_;

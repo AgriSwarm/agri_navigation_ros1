@@ -21,6 +21,8 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
 )
 
+find_package(yaml-cpp REQUIRED)
+
 generate_dynamic_reconfigure_options(
   cfg/PID.cfg
 )
@@ -40,18 +42,28 @@ catkin_package(
   LIBRARIES ${PROJECT_NAME}
   # LIBRARIES sensor_visualization
   CATKIN_DEPENDS roscpp swarm_msgs message_runtime roslib
+  DEPENDS YAML_CPP
 )
 
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  ${YAML_CPP_INCLUDE_DIRS}
   /usr/local/include
 )
 
-add_executable(hard_mavros_bridge src/hard_mavros_bridge.cpp)
+add_executable(hard_mavros_bridge 
+  src/hard_mavros_bridge_core.cpp
+  src/callbacks_bridge.cpp
+  src/gpio_bridge.cpp
+  src/params_bridge.cpp
+  src/utils_bridge.cpp
+  src/visual_bridge.cpp
+)
 
 target_link_libraries(hard_mavros_bridge
   ${catkin_LIBRARIES}
+  ${YAML_CPP_LIBRARIES}
   JetsonGPIO
 )
 
