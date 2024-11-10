@@ -1,4 +1,3 @@
-
 <launch>
 	<!-- vim: set ft=xml noet : -->
 	<!-- example launch script for ArduPilot based FCU's -->
@@ -17,7 +16,7 @@
     <arg name="pluginlists_yaml" default="$(find agri_resources)/config/mavros/apm_pluginlists.yaml" />
 	<arg name="config_yaml" default="$(find agri_resources)/config/mavros/apm_config.yaml" />
     <arg name="self_id" default="0"/>
-    <arg name="rosbag" default="true"/>
+    <arg name="rosbag" default="false"/>
 
 	<node pkg="mavros" type="mavros_node" name="mavros" required="$(eval not respawn_mavros)" clear_params="true" output="$(arg log_output)" respawn="$(arg respawn_mavros)">
 		<param name="fcu_url" value="$(arg fcu_url)" />
