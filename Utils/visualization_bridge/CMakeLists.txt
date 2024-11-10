@@ -14,12 +14,13 @@ find_package(catkin REQUIRED COMPONENTS
   nav_msgs
   rviz_visual_tools
   visualization_msgs
+  swarm_msgs
 )
 
 catkin_package(
   # INCLUDE_DIRS include
-  LIBRARIES sensor_visualization
-  CATKIN_DEPENDS roscpp nav_msgs rviz_visual_tools visualization_msgs
+  LIBRARIES visualization_bridge
+  CATKIN_DEPENDS roscpp nav_msgs rviz_visual_tools visualization_msgs swarm_msgs
 )
 
 include_directories(
@@ -27,16 +28,16 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(sensor_visualization_node 
-  src/sensor_visualization.cpp
+add_executable(visualization_bridge_node 
+  src/visualization_bridge.cpp
 )
 
-add_dependencies(sensor_visualization_node 
+add_dependencies(visualization_bridge_node 
   ${${PROJECT_NAME}_EXPORTED_TARGETS} 
   ${catkin_EXPORTED_TARGETS}
 )
 
-target_link_libraries(sensor_visualization_node
+target_link_libraries(visualization_bridge_node
   ${catkin_LIBRARIES}
 )
 

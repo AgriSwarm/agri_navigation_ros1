@@ -6,6 +6,18 @@ void MavrosBridge::stateCallback(mavros_msgs::State msg)
     ap_connected_ = msg.connected;
     // pubPictgramState(msg);
 
+    status_cur_.infra_status = swarm_msgs::SystemStatus::INFRA_INACTIVE;
+    if(msg.connected){
+        status_cur_.infra_status = swarm_msgs::SystemStatus::INFRA_AP_CONNECTED;
+    }
+    if(nav_initialized_){
+        status_cur_.infra_status = swarm_msgs::SystemStatus::INFRA_ODOM_READY;
+    }
+    if(msg.armed){
+        status_cur_.infra_status = swarm_msgs::SystemStatus::INFRA_ARMED;
+    }
+    status_cur_.ap_status = msg.mode;
+
     if (!ap_initialized_ && nav_initialized_)
     {
         initialSetup();
@@ -33,6 +45,7 @@ void MavrosBridge::statusCallback(const swarm_msgs::SystemStatus msg)
     if(static_cast<int>(msg.drone_id) != self_id){
         return;
     }
+    status_cur_.nav_status = msg.nav_status;
 }
 
 void MavrosBridge::thermalTimerCallback(const ros::TimerEvent&)
@@ -105,7 +118,8 @@ void MavrosBridge::pictStateTimerCallback(const ros::TimerEvent&)
         transform_.setRotation(q);
         br_.sendTransform(tf::StampedTransform(transform_, ros::Time::now(), "world", "base_link"));
     }
-    pubPictgramState(last_state_);
+    pubPictgramState(status_cur_);
+    status_pub_.publish(status_cur_);
 }
 
 void MavrosBridge::batteryCallback(sensor_msgs::BatteryState msg)
@@ -144,5 +158,12 @@ void MavrosBridge::visionPoseCallback(const geometry_msgs::PoseStampedConstPtr& 
     if(!nav_initialized_){
         ROS_INFO("Nav initialized");
         nav_initialized_ = true;
+    }
+}
+
+void MavrosBridge::APEKFPoseCallback(const geometry_msgs::PoseStampedConstPtr& msg)
+{
+    if(status_cur_.infra_status < swarm_msgs::SystemStatus::INFRA_AP_EKF_READY){
+        status_cur_.infra_status = swarm_msgs::SystemStatus::INFRA_AP_EKF_READY;
     }
 }

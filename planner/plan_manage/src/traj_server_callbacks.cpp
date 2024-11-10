@@ -7,9 +7,9 @@ namespace ego_planner
 bool TrajServer::updateModeCallback(quadrotor_msgs::UpdateMode::Request& req,
                         quadrotor_msgs::UpdateMode::Response& res)
 {
-    if (req.mode == quadrotor_msgs::UpdateMode::Request::INACTIVE)
+    if (req.mode == quadrotor_msgs::UpdateMode::Request::IDLE)
     {
-        updateMode(NavigationMode::INACTIVE);
+        updateMode(NavigationMode::IDLE);
     }
     else if (req.mode == quadrotor_msgs::UpdateMode::Request::SEARCH)
     {
@@ -19,17 +19,17 @@ bool TrajServer::updateModeCallback(quadrotor_msgs::UpdateMode::Request& req,
     {
         updateMode(NavigationMode::APPROACH);
     }
-    else if (req.mode == quadrotor_msgs::UpdateMode::Request::ROOT_TRACKING)
+    else if (req.mode == quadrotor_msgs::UpdateMode::Request::ROOT_TRACK)
     {
-        updateMode(NavigationMode::ROOT_TRACKING);
+        updateMode(NavigationMode::ROOT_TRACK);
     }
-    else if (req.mode == quadrotor_msgs::UpdateMode::Request::PURE_TRACKING)
+    else if (req.mode == quadrotor_msgs::UpdateMode::Request::PURE_TRACK)
     {
-        updateMode(NavigationMode::PURE_TRACKING);
+        updateMode(NavigationMode::PURE_TRACK);
     }
-    else if (req.mode == quadrotor_msgs::UpdateMode::Request::HOVERING)
+    else if (req.mode == quadrotor_msgs::UpdateMode::Request::HOVER)
     {
-        updateMode(NavigationMode::HOVERING);
+        updateMode(NavigationMode::HOVER);
     }
     else
     {
@@ -88,7 +88,7 @@ void TrajServer::polyTrajCallback(const traj_utils::PolyTraj::ConstPtr &msg)
     traj_duration_ = traj_->getTotalDuration();
     traj_id_ = msg->traj_id;
 
-    if (mode_ == NavigationMode::INACTIVE){
+    if (mode_ == NavigationMode::IDLE){
         updateMode(NavigationMode::SEARCH);
     }
 }
@@ -129,12 +129,12 @@ void TrajServer::targetPoseCallback(const quadrotor_msgs::TrackingPose::ConstPtr
         // ROS_INFO("[traj_server] diff: %f", diff.norm());
         if(diff.norm() > root_tracking_threshold_)
         {
-            updateMode(NavigationMode::ROOT_TRACKING);
+            updateMode(NavigationMode::ROOT_TRACK);
             executeRootTracking(tracking_state_);
         }
         else
         {
-            updateMode(NavigationMode::PURE_TRACKING);
+            updateMode(NavigationMode::PURE_TRACK);
         }
     }
     else if(msg->target_status == quadrotor_msgs::TrackingPose::TARGET_STATUS_LOST)
@@ -146,13 +146,13 @@ void TrajServer::targetPoseCallback(const quadrotor_msgs::TrackingPose::ConstPtr
     else
     {
         ROS_ERROR("[traj_server] Unrecognized target status!");
-        updateMode(NavigationMode::INACTIVE);
+        updateMode(NavigationMode::IDLE);
     }
 }
 
 void TrajServer::cmdTimerCallback(const ros::TimerEvent &event)
 {
-    if(mode_ == NavigationMode::INACTIVE)
+    if(mode_ == NavigationMode::IDLE)
     {
         return;
     }
@@ -185,7 +185,7 @@ void TrajServer::cmdTimerCallback(const ros::TimerEvent &event)
             publishPinCmd();
         }
     }
-    else if(mode_ == NavigationMode::ROOT_TRACKING)
+    else if(mode_ == NavigationMode::ROOT_TRACK)
     {
         // ROS_ERROR("Not Implemented ROOT_TRACKING!");
         double t_cur = (time_now - traj_start_time_).toSec();
@@ -208,11 +208,11 @@ void TrajServer::cmdTimerCallback(const ros::TimerEvent &event)
             publishPinCmd();
         }
     }
-    else if(mode_ == NavigationMode::PURE_TRACKING)
+    else if(mode_ == NavigationMode::PURE_TRACK)
     {
         publishCmd(tracking_state_);
     }
-    else if(mode_ == NavigationMode::HOVERING)
+    else if(mode_ == NavigationMode::HOVER)
     {
         publishHoverCmd();
     }

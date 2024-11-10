@@ -70,7 +70,7 @@ private:
     bool activateCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
     // bool takeoffCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
     void stateCallback(mavros_msgs::State msg);
-    void pubPictgramState(mavros_msgs::State msg);
+    void pubPictgramState(swarm_msgs::SystemStatus msg);
     void hpCallback(mavros_msgs::HomePosition msg);
     void batteryCallback(sensor_msgs::BatteryState msg);
     void odomCallback(nav_msgs::Odometry msg);
@@ -79,6 +79,7 @@ private:
     void poseImuCallback(const geometry_msgs::PoseStampedConstPtr& pose, const sensor_msgs::ImuConstPtr& imu);
     void landMandCallback(swarm_msgs::CommandTOL msg);
     void takeoffMandCallback(swarm_msgs::CommandTOL msg);
+    void APEKFPoseCallback(const geometry_msgs::PoseStampedConstPtr& msg);
 
     bool checkMove(void);
     sensor_msgs::Joy convertRCtoJoy(const mavros_msgs::RCIn& msg);
@@ -108,7 +109,7 @@ private:
     ros::Subscriber rc_sub_;
     // ros::Subscriber activate_sub_;
     ros::Subscriber state_sub_;
-    ros::Subscriber hp_sub_;
+    ros::Subscriber hp_sub_, ap_ekf_pose_sub_;
     ros::Subscriber battery_sub_, odom_sub_, status_sub_, vision_pose_sub_, takeoff_mand_sub_, land_mand_sub_;
     ros::ServiceServer activate_srv_, takeoff_srv_;
     ros::ServiceClient takeoff_client_, land_client_;
@@ -142,6 +143,8 @@ private:
 
     mavros_msgs::State last_state_;
     nav_msgs::Odometry odom_cur_;
+    swarm_msgs::SystemStatus status_cur_;
+
     bool hp_valid_{ false };
     bool ap_initialized_{ false };
     bool nav_initialized_{ false };
