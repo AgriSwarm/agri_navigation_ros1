@@ -7,7 +7,7 @@ set(CMAKE_CXX_FLAGS "-O3 -Wall -g")
 ADD_COMPILE_OPTIONS(-std=c++14 )
 ADD_COMPILE_OPTIONS(-std=c++14 )
 
-# set(JetsonGPIO_DIR "/usr/local/lib/cmake/JetsonGPIO")
+set(JetsonGPIO_DIR "/usr/local/lib/cmake/JetsonGPIO")
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
@@ -17,7 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
   mavros_msgs
   swarm_msgs
   dynamic_reconfigure
-  # JetsonGPIO
+  JetsonGPIO
   message_generation
 )
 
