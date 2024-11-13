@@ -6,7 +6,7 @@ import sys
 import termios
 import tty
 from functools import partial
-from mavros_msgs.srv import CommandTOL
+from mavros_msgs.srv import CommandTOL as CommandTOLSrv
 from quadrotor_msgs.msg import GoalSet
 from quadrotor_msgs.srv import UpdateMode, UpdateModeRequest
 from hardware_utils.srv import RotateMotor
@@ -178,8 +178,8 @@ class MavrosBridgeClient:
             return False
         
         try:
-            takeoff_cl = rospy.ServiceProxy('/mavros/cmd/land', CommandTOL)
-            response = takeoff_cl(altitude=1, latitude=0, longitude=0, min_pitch=0, yaw=0)
+            takeoff_cl = rospy.ServiceProxy('/mavros/cmd/land', CommandTOLSrv)
+            response = takeoff_cl(altitude=1.5, latitude=0, longitude=0, min_pitch=0, yaw=0)
             rospy.loginfo(response)
             return True
         except rospy.ServiceException as e:
@@ -196,8 +196,8 @@ class MavrosBridgeClient:
             return False
         
         try:
-            takeoff_cl = rospy.ServiceProxy('/mavros/cmd/takeoff', CommandTOL)
-            response = takeoff_cl(altitude=1.0, latitude=0, longitude=0, min_pitch=0, yaw=0)
+            takeoff_cl = rospy.ServiceProxy('/mavros/cmd/takeoff', CommandTOLSrv)
+            response = takeoff_cl(altitude=1.5, latitude=0, longitude=0, min_pitch=0, yaw=0)
             rospy.loginfo(response)
             return True
         except rospy.ServiceException as e:
