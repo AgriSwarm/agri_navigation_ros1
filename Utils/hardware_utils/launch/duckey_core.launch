@@ -161,7 +161,7 @@
 
     <node pkg="hardware_utils" type="hard_mavros_bridge" name="mavros_bridge" output="screen">
         <remap from="/mavros_bridge/odom" to="/d2vins/odometry"/>
-        <param name="cells_batt" value="3" />
+        <param name="cells_batt" value="2" />
         <param name="imu_freq" value="$(arg imu_freq)" />
 	    <param name="infra_freq" value="$(arg infra_freq)" />
         <param name="set_params" value="$(arg set_params)" />
