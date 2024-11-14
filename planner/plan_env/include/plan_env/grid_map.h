@@ -22,8 +22,13 @@
 #include <message_filters/sync_policies/approximate_time.h>
 #include <message_filters/sync_policies/exact_time.h>
 #include <message_filters/time_synchronizer.h>
+#include <jsk_recognition_msgs/BoundingBox.h>
 
 #include <plan_env/raycast.h>
+#include <tf2/LinearMath/Quaternion.h>
+
+#include <dynamic_reconfigure/server.h>
+#include <plan_env/GridMapConfig.h>
 
 #define logit(x) (log((x) / (1 - (x))))
 #define GRID_MAP_OBS_FLAG 32767
@@ -47,6 +52,8 @@ struct MappingParameters
   int pose_type_;
   bool enable_virtual_walll_;
   double virtual_ceil_, virtual_ground_;
+  double virtual_wall_x_min_, virtual_wall_x_max_, virtual_wall_y_min_, virtual_wall_y_max_, virtual_wall_z_min_,
+      virtual_wall_z_max_, virtual_wall_margin_, virtual_wall_yaw_;
   double occ_interval_, vis_interval_;
 
   /* camera parameters */
@@ -149,6 +156,7 @@ public:
   void initParams(ros::NodeHandle &nh);
   inline int getOccupancy(Eigen::Vector3d pos);
   inline int getInflateOccupancy(Eigen::Vector3d pos);
+  inline bool checkVirtualBound(Eigen::Vector3d pos);
   inline double getResolution();
   bool getOdomDepthTimeout() { return md_.flag_depth_odom_timeout_; }
 
@@ -180,6 +188,7 @@ private:
 
   void publishMap();
   void publishMapInflate();
+  void publishBound();
 
   // get depth image and camera pose
   void poseCallback(const geometry_msgs::PoseStampedConstPtr &pose);
@@ -190,6 +199,9 @@ private:
   void depthOdomCallback(const sensor_msgs::ImageConstPtr &img, const nav_msgs::OdometryConstPtr &odom);
   void cloudCallback(const sensor_msgs::PointCloud2ConstPtr &img);
   void odomCallback(const nav_msgs::OdometryConstPtr &odom);
+
+  plan_env::GridMapConfig getGridMapParam();
+  void configCallback(plan_env::GridMapConfig &config, uint32_t level);
 
   // update occupancy by raycasting
   void updateOccupancyCallback(const ros::TimerEvent & /*event*/);
@@ -230,8 +242,11 @@ private:
   SynchronizerImageOdom sync_image_odom_;
 
   ros::Subscriber indep_cloud_sub_, indep_odom_sub_, extrinsic_sub_, only_pose_sub_, only_depth_sub_;
-  ros::Publisher map_pub_, map_inf_pub_, delay_pub_, cam_pose_pub_;
+  ros::Publisher map_pub_, map_inf_pub_, delay_pub_, cam_pose_pub_, virtual_bound_pub_;
   ros::Timer occ_timer_, vis_timer_, fading_timer_;
+
+  boost::recursive_mutex config_mutex_;
+  std::unique_ptr<dynamic_reconfigure::Server<plan_env::GridMapConfig>> server_;
 
   //
   uniform_real_distribution<double> rand_noise_;
@@ -398,10 +413,14 @@ inline Eigen::Vector3i GridMap::infBufIdx2GlobalIdx(size_t address)
 
 inline int GridMap::getOccupancy(Eigen::Vector3d pos)
 {
+  if (!checkVirtualBound(pos))
+    return -1;
   if (!isInBuf(pos))
     return 0;
 
-  if (mp_.enable_virtual_walll_ && (pos(2) >= mp_.virtual_ceil_ || pos(2) <= mp_.virtual_ground_))
+  // if (mp_.enable_virtual_walll_ && (pos(2) >= mp_.virtual_ceil_ || pos(2) <= mp_.virtual_ground_))
+  //   return -1;
+  if (!checkVirtualBound(pos))
     return -1;
 
   return md_.occupancy_buffer_[globalIdx2BufIdx(pos2GlobalIdx(pos))] > mp_.min_occupancy_log_ ? 1 : 0;
@@ -409,13 +428,43 @@ inline int GridMap::getOccupancy(Eigen::Vector3d pos)
 
 inline int GridMap::getInflateOccupancy(Eigen::Vector3d pos)
 {
+  if (!checkVirtualBound(pos))
+    return -1;
   if (!isInInfBuf(pos))
     return 0;
 
-  if (mp_.enable_virtual_walll_ && (pos(2) >= mp_.virtual_ceil_ || pos(2) <= mp_.virtual_ground_))
-    return -1;
+  // if (mp_.enable_virtual_walll_ && (pos(2) >= mp_.virtual_ceil_ || pos(2) <= mp_.virtual_ground_))
+  //   return -1;
 
   return int(md_.occupancy_buffer_inflate_[globalIdx2InfBufIdx(pos2GlobalIdx(pos))]);
+}
+
+inline bool GridMap::checkVirtualBound(Eigen::Vector3d pos)
+{
+  // バウンディングボックスの中心
+  Eigen::Vector3d box_center((mp_.virtual_wall_x_max_ + mp_.virtual_wall_x_min_) / 2.0,
+                            (mp_.virtual_wall_y_max_ + mp_.virtual_wall_y_min_) / 2.0,
+                            (mp_.virtual_wall_z_max_ + mp_.virtual_wall_z_min_) / 2.0);
+
+  // バウンディングボックスの半分のサイズ
+  Eigen::Vector3d box_half_size((mp_.virtual_wall_x_max_ - mp_.virtual_wall_x_min_) / 2.0,
+                                (mp_.virtual_wall_y_max_ - mp_.virtual_wall_y_min_) / 2.0,
+                                (mp_.virtual_wall_z_max_ - mp_.virtual_wall_z_min_) / 2.0);
+
+  // ヨー角からクオータニオンを作成
+  Eigen::Quaterniond q(Eigen::AngleAxisd(mp_.virtual_wall_yaw_, Eigen::Vector3d::UnitZ()));
+
+  // 点をバウンディングボックスの座標系に変換
+  // 1. 中心を原点に移動
+  Eigen::Vector3d centered_pos = pos - box_center;
+  
+  // 2. バウンディングボックスの向きに合わせて逆回転
+  Eigen::Vector3d rotated_pos = q.inverse() * centered_pos;
+
+  // 各軸方向で範囲チェック
+  return (std::abs(rotated_pos.x()) <= box_half_size.x() + mp_.virtual_wall_margin_ &&
+          std::abs(rotated_pos.y()) <= box_half_size.y() + mp_.virtual_wall_margin_ &&
+          std::abs(rotated_pos.z()) <= box_half_size.z() + mp_.virtual_wall_margin_);
 }
 
 inline bool GridMap::isInBuf(const Eigen::Vector3d &pos)

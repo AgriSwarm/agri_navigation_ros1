@@ -3,12 +3,12 @@
     void GridMap::initMap(ros::NodeHandle &nh)
     {
         node_ = nh;
-
         initParams(nh);
 
         map_pub_ = node_.advertise<sensor_msgs::PointCloud2>("grid_map/occupancy", 10);
         map_inf_pub_ = node_.advertise<sensor_msgs::PointCloud2>("grid_map/occupancy_inflate", 10);
         delay_pub_ = node_.advertise<std_msgs::Float32>("grid_map/delay", 10);
+        virtual_bound_pub_ = node_.advertise<jsk_recognition_msgs::BoundingBox>("grid_map/virtual_bound", 10);
         // cam_pose_pub_ = node_.advertise<geometry_msgs::PoseStamped>("grid_map/camera_pose", 10);
 
         /* init callback */
@@ -59,10 +59,48 @@
 
         md_.flag_have_ever_received_depth_ = false;
         md_.flag_depth_odom_timeout_ = false;
+
+        plan_env::GridMapConfig initial_config = getGridMapParam();
+        
+        server_ = std::make_unique<dynamic_reconfigure::Server<plan_env::GridMapConfig>>(config_mutex_);
+        server_->setConfigDefault(initial_config);
+        server_->updateConfig(initial_config);
+
+        dynamic_reconfigure::Server<plan_env::GridMapConfig>::CallbackType f;
+        f = boost::bind(&GridMap::configCallback, this, _1, _2);
+        server_->setCallback(f);
+    }
+
+    plan_env::GridMapConfig GridMap::getGridMapParam()
+    {
+        plan_env::GridMapConfig config;
+        config.virtual_wall_x_min = mp_.virtual_wall_x_min_;
+        config.virtual_wall_x_max = mp_.virtual_wall_x_max_;
+        config.virtual_wall_y_min = mp_.virtual_wall_y_min_;
+        config.virtual_wall_y_max = mp_.virtual_wall_y_max_;
+        config.virtual_wall_z_min = mp_.virtual_wall_z_min_;
+        config.virtual_wall_z_max = mp_.virtual_wall_z_max_;
+        config.virtual_wall_margin = mp_.virtual_wall_margin_;
+        config.virtual_wall_yaw = mp_.virtual_wall_yaw_;
+        return config;
+    }
+
+    void GridMap::configCallback(plan_env::GridMapConfig &config, uint32_t level)
+    {
+        mp_.virtual_wall_x_min_ = config.virtual_wall_x_min;
+        mp_.virtual_wall_x_max_ = config.virtual_wall_x_max;
+        mp_.virtual_wall_y_min_ = config.virtual_wall_y_min;
+        mp_.virtual_wall_y_max_ = config.virtual_wall_y_max;
+        mp_.virtual_wall_z_min_ = config.virtual_wall_z_min;
+        mp_.virtual_wall_z_max_ = config.virtual_wall_z_max;
+        mp_.virtual_wall_margin_ = config.virtual_wall_margin;
+        mp_.virtual_wall_yaw_ = config.virtual_wall_yaw;
     }
 
     void GridMap::initParams(ros::NodeHandle & nh)
     {
+        ROS_INFO("GridMap initParams");
+
         std::string ego_config_path;
         nh.param<std::string>("ego_config_path", ego_config_path, "");
         cv::FileStorage general_fs;
@@ -89,6 +127,16 @@
         mp_.obstacles_inflation_ = (double)grid_map_node["obstacles_inflation"];
         mp_.virtual_ceil_ = (double)grid_map_node["virtual_ceil"];
         mp_.virtual_ground_ = (double)grid_map_node["virtual_ground"];
+        mp_.virtual_wall_x_min_ = (double)grid_map_node["virtual_wall_x_min"];
+        mp_.virtual_wall_x_max_ = (double)grid_map_node["virtual_wall_x_max"];
+        mp_.virtual_wall_y_min_ = (double)grid_map_node["virtual_wall_y_min"];
+        mp_.virtual_wall_y_max_ = (double)grid_map_node["virtual_wall_y_max"];
+        mp_.virtual_wall_z_min_ = (double)grid_map_node["virtual_wall_z_min"];
+        mp_.virtual_wall_z_max_ = (double)grid_map_node["virtual_wall_z_max"];
+        mp_.virtual_wall_margin_ = (double)grid_map_node["virtual_wall_margin"];
+        mp_.virtual_wall_yaw_ = (double)grid_map_node["virtual_wall_yaw"];
+
+        ROS_INFO("GridMap initParams 1");
 
         mp_.fx_ = (double)depth_fs["projection_parameters"]["fx"];
         mp_.fy_ = (double)depth_fs["projection_parameters"]["fy"];
@@ -292,6 +340,8 @@
 
     void GridMap::visCallback(const ros::TimerEvent & /*event*/)
     {
+    publishBound();
+
     if (!mp_.have_initialized_)
         return;
 
@@ -991,8 +1041,8 @@
     void GridMap::publishMap()
     {
 
-    // if (map_pub_.getNumSubscribers() <= 0)
-    //   return;
+    if (map_pub_.getNumSubscribers() <= 0)
+      return;
 
     Eigen::Vector3d heading = (md_.camera_r_m_ * md_.base2cam_.block<3, 3>(0, 0).transpose()).block<3, 1>(0, 0);
     pcl::PointCloud<pcl::PointXYZ> cloud;
@@ -1023,8 +1073,8 @@
 
     void GridMap::publishMapInflate()
     {
-    // if (map_inf_pub_.getNumSubscribers() <= 0)
-    //   return;
+    if (map_inf_pub_.getNumSubscribers() <= 0)
+      return;
 
     Eigen::Vector3d heading = (md_.camera_r_m_ * md_.base2cam_.block<3, 3>(0, 0).transpose()).block<3, 1>(0, 2);
     pcl::PointCloud<pcl::PointXYZ> cloud;
@@ -1051,6 +1101,42 @@
 
     pcl::toROSMsg(cloud, cloud_msg);
     map_inf_pub_.publish(cloud_msg);
+    }
+
+    void GridMap::publishBound()
+    {
+        // if (virtual_bound_pub_.getNumSubscribers() <= 0)
+        //     return;
+
+        jsk_recognition_msgs::BoundingBox bound_msg;
+
+        // ヘッダーの設定
+        bound_msg.header.stamp = ros::Time::now();
+        bound_msg.header.frame_id = "world"; // または適切な座標フレーム
+
+        // バウンディングボックスの中心位置を設定
+        bound_msg.pose.position.x = (mp_.virtual_wall_x_max_ + mp_.virtual_wall_x_min_) / 2.0;
+        bound_msg.pose.position.y = (mp_.virtual_wall_y_max_ + mp_.virtual_wall_y_min_) / 2.0;
+        bound_msg.pose.position.z = (mp_.virtual_wall_z_max_ + mp_.virtual_wall_z_min_) / 2.0;
+
+        // バウンディングボックスの姿勢を設定（クォータニオン）
+        tf2::Quaternion q;
+        q.setRPY(0, 0, mp_.virtual_wall_yaw_); // Roll=0, Pitch=0, Yaw=virtual_wall_yaw_
+        bound_msg.pose.orientation.x = q.x();
+        bound_msg.pose.orientation.y = q.y();
+        bound_msg.pose.orientation.z = q.z();
+        bound_msg.pose.orientation.w = q.w();
+
+        // バウンディングボックスのサイズを設定
+        bound_msg.dimensions.x = mp_.virtual_wall_x_max_ - mp_.virtual_wall_x_min_ + 2 * mp_.virtual_wall_margin_;
+        bound_msg.dimensions.y = mp_.virtual_wall_y_max_ - mp_.virtual_wall_y_min_ + 2 * mp_.virtual_wall_margin_;
+        bound_msg.dimensions.z = mp_.virtual_wall_z_max_ - mp_.virtual_wall_z_min_ + 2 * mp_.virtual_wall_margin_;
+
+        // オプションのパラメータを設定
+        bound_msg.value = 1.0; // デフォルト値
+        bound_msg.label = 0;   // デフォルト値
+
+        virtual_bound_pub_.publish(bound_msg);
     }
 
     void GridMap::testIndexingCost()

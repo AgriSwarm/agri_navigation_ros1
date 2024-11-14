@@ -32,9 +32,9 @@ class MavrosBridgeClient:
             self.land_command_pub = rospy.Publisher('/hardware_bridge/land_mand', CommandTOL, queue_size=1)
             self.odom_sub = rospy.Subscriber('/d2vins/indexed_odometry', IndexedOdometry, self.lcm_odom_callback, queue_size=1)
         else:
-            # self.odom_sub = rospy.Subscriber('/mavros/local_position/odom', Odometry, self.odom_callback)
-            self.odom_sub = rospy.Subscriber('/d2vins/odometry', Odometry, self.odom_callback)
-        
+            self.odom_sub = rospy.Subscriber('/mavros/local_position/odom', Odometry, self.odom_callback)
+            # self.odom_sub = rospy.Subscriber('/d2vins/odometry', Odometry, self.odom_callback)
+
         # Variables
         self.position_target = np.zeros(3)
         self.init_pose_pid = False
@@ -179,7 +179,7 @@ class MavrosBridgeClient:
         
         try:
             takeoff_cl = rospy.ServiceProxy('/mavros/cmd/land', CommandTOLSrv)
-            response = takeoff_cl(altitude=1.5, latitude=0, longitude=0, min_pitch=0, yaw=0)
+            response = takeoff_cl(altitude=1.0, latitude=0, longitude=0, min_pitch=0, yaw=0)
             rospy.loginfo(response)
             return True
         except rospy.ServiceException as e:
@@ -197,7 +197,7 @@ class MavrosBridgeClient:
         
         try:
             takeoff_cl = rospy.ServiceProxy('/mavros/cmd/takeoff', CommandTOLSrv)
-            response = takeoff_cl(altitude=1.5, latitude=0, longitude=0, min_pitch=0, yaw=0)
+            response = takeoff_cl(altitude=1.0, latitude=0, longitude=0, min_pitch=0, yaw=0)
             rospy.loginfo(response)
             return True
         except rospy.ServiceException as e:
