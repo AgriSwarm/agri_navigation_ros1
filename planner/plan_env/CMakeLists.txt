@@ -16,15 +16,21 @@ find_package(catkin REQUIRED COMPONENTS
   visualization_msgs
   cv_bridge
   message_filters
+  dynamic_reconfigure
+  message_generation
 )
 
 find_package(Eigen3 REQUIRED)
 find_package(PCL 1.7 REQUIRED)
 
+generate_dynamic_reconfigure_options(
+  cfg/GridMap.cfg
+)
+
 catkin_package(
  INCLUDE_DIRS include
  LIBRARIES plan_env
- CATKIN_DEPENDS roscpp std_msgs
+ CATKIN_DEPENDS roscpp std_msgs dynamic_reconfigure
 #  DEPENDS system_lib
 )
 
@@ -44,6 +50,13 @@ add_library( plan_env
     # src/grid_map_bigmap.cpp
     src/raycast.cpp
     )
+
+add_dependencies(${PROJECT_NAME}
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  ${catkin_EXPORTED_TARGETS}
+  ${PROJECT_NAME}_gencfg
+)
+
 
 target_link_libraries( plan_env
     ${catkin_LIBRARIES} 
