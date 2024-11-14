@@ -23,7 +23,8 @@ class MavrosBridgeClient:
         self.use_lcm = rospy.get_param('~use_lcm', False)
         
         # Publishers
-        self.setpoint_position_pub = rospy.Publisher('/traj_server/setpoint_position', PositionCommand, queue_size=1)
+        # self.setpoint_position_pub = rospy.Publisher('/traj_server/setpoint_position', PositionCommand, queue_size=1)
+        self.setpoint_position_pub = rospy.Publisher('/mavros/setpoint_position/local', PoseStamped, queue_size=1)
         self.target_marker_pub = rospy.Publisher('/cmd_gcs/setpoint_position_marker', Marker, queue_size=10)
         self.goal_pub = rospy.Publisher('/goal_with_id', GoalSet, queue_size=10)
 
@@ -76,18 +77,31 @@ class MavrosBridgeClient:
         self.position_target += np.array([dx, dy, dz])
 
         if self.mode == 'setpoint_position':
-            cmd = PositionCommand()
+            # cmd = PositionCommand()
+            # cmd.header.stamp = rospy.Time.now()
+            # cmd.header.frame_id = "world"
+            # cmd.drone_id = self.drone_id
+            # cmd.pose.position.x = self.position_target[0]
+            # cmd.pose.position.y = self.position_target[1]
+            # cmd.pose.position.z = self.position_target[2]
+            # cmd.pose.orientation.w = 1.0
+            # self.setpoint_position_pub.publish(cmd)
+            # print("Published setpoint: x=%.2f, y=%.2f, z=%.2f" % (
+            #     self.position_target[0], 
+            #     self.position_target[1], 
+            #     self.position_target[2]
+            # ))
+            cmd = PoseStamped()
             cmd.header.stamp = rospy.Time.now()
             cmd.header.frame_id = "world"
-            cmd.drone_id = self.drone_id
             cmd.pose.position.x = self.position_target[0]
             cmd.pose.position.y = self.position_target[1]
             cmd.pose.position.z = self.position_target[2]
             cmd.pose.orientation.w = 1.0
             self.setpoint_position_pub.publish(cmd)
             print("Published setpoint: x=%.2f, y=%.2f, z=%.2f" % (
-                self.position_target[0], 
-                self.position_target[1], 
+                self.position_target[0],
+                self.position_target[1],
                 self.position_target[2]
             ))
         else:  # goal mode
