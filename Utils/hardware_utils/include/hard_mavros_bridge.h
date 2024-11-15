@@ -36,6 +36,7 @@
 
 #include <swarm_msgs/SystemStatus.h>
 #include <swarm_msgs/CommandTOL.h>
+#include <quadrotor_msgs/UpdateMode.h>
 #include <sensor_msgs/Imu.h>
 #include <message_filters/subscriber.h>
 #include <message_filters/synchronizer.h>
@@ -77,8 +78,14 @@ private:
     void visionPoseCallback(const geometry_msgs::PoseStampedConstPtr& msg);
     void statusCallback(swarm_msgs::SystemStatus msg);
     void poseImuCallback(const geometry_msgs::PoseStampedConstPtr& pose, const sensor_msgs::ImuConstPtr& imu);
-    void landMandCallback(swarm_msgs::CommandTOL msg);
+
+    // deprecated, for LCM compatibility
     void takeoffMandCallback(swarm_msgs::CommandTOL msg);
+    void landMandCallback(swarm_msgs::CommandTOL msg);
+
+    bool takeoffCallback(mavros_msgs::CommandTOL::Request& req, mavros_msgs::CommandTOL::Response& res);
+    bool landCallback(mavros_msgs::CommandTOL::Request& req, mavros_msgs::CommandTOL::Response& res);
+
     void APEKFPoseCallback(const geometry_msgs::PoseStampedConstPtr& msg);
 
     bool checkMove(void);
@@ -111,7 +118,7 @@ private:
     ros::Subscriber state_sub_;
     ros::Subscriber hp_sub_, ap_ekf_pose_sub_;
     ros::Subscriber battery_sub_, odom_sub_, status_sub_, vision_pose_sub_, takeoff_mand_sub_, land_mand_sub_;
-    ros::ServiceServer activate_srv_, takeoff_srv_;
+    ros::ServiceServer activate_srv_, takeoff_srv_, land_srv_;
     ros::ServiceClient takeoff_client_, land_client_;
 
     boost::recursive_mutex config_mutex_;
@@ -133,7 +140,7 @@ private:
     ros::ServiceClient arm_client_;
     ros::ServiceClient set_msg_rate_group_client_;
     ros::ServiceClient set_msg_rate_client_;
-    ros::ServiceClient get_param_client_, set_param_client_, pull_param_client_;
+    ros::ServiceClient get_param_client_, set_param_client_, pull_param_client_, update_mode_client_;
 
     tf::TransformBroadcaster br_;
     tf::Transform transform_;

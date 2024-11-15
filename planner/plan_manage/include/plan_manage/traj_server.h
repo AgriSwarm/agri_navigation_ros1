@@ -61,7 +61,7 @@ class TrajServer
 
     private:
         ros::NodeHandle nh_;
-        ros::Subscriber poly_traj_sub_, target_pose_sub_, heartbeat_sub_, odom_sub_, setpoint_pos_sub_;
+        ros::Subscriber poly_traj_sub_, target_pose_sub_, heartbeat_sub_, odom_sub_, setpoint_pos_sub_, status_sub_;
         // fake drone
         ros::Publisher fake_pos_cmd_pub_, status_pub_;
         // crazyflie
@@ -92,6 +92,7 @@ class TrajServer
                         quadrotor_msgs::UpdateMode::Response& res);
 
         void cmdTimerCallback(const ros::TimerEvent &event);
+        void statusCallback(const swarm_msgs::SystemStatus::ConstPtr &msg);
         void publishCmd(const DroneState &state);
         void publishFakeCmd(const DroneState &state);
         // void publishCFCmd(const DroneState &state);

@@ -35,6 +35,7 @@ TrajServer::TrajServer(ros::NodeHandle &nh) : nh_(nh)
 
     update_mode_srv_ = nh_.advertiseService("/update_mode", &TrajServer::updateModeCallback, this);
 
+    status_sub_ = nh.subscribe("/hardware_bridge/system_status", 1, &TrajServer::statusCallback, this);
     poly_traj_sub_ = nh_.subscribe("planning/trajectory", 1, &TrajServer::polyTrajCallback, this);
     target_pose_sub_ = nh_.subscribe("planning/track_pose", 1, &TrajServer::targetPoseCallback, this);
     setpoint_pos_sub_ = nh_.subscribe("planning/setpoint_position", 1, &TrajServer::setpointPosCallback, this);
