@@ -67,6 +67,56 @@ bool MavrosBridge::activateCallback(std_srvs::SetBool::Request& req, std_srvs::S
     return true;
 }
 
+bool MavrosBridge::takeoffCallback(mavros_msgs::CommandTOL::Request& req, mavros_msgs::CommandTOL::Response& res)
+{
+    if(activate(true)){
+        mavros_msgs::CommandTOL mavros_msg;
+        mavros_msg.request.altitude = req.altitude;
+        mavros_msg.request.latitude = req.latitude;
+        mavros_msg.request.longitude = req.longitude;
+        mavros_msg.request.min_pitch = req.min_pitch;
+        mavros_msg.request.yaw = req.yaw;
+        ros::Duration(1.0).sleep();
+        if (takeoff_client_.call(mavros_msg)){
+            ROS_INFO("Takeoff command sent");
+            res.success = true;
+        }else{
+            ROS_ERROR("Failed to send takeoff command");
+            res.success = false;
+        }
+    }else{
+        ROS_ERROR("Failed to activate");
+        res.success = false;
+    }
+    return true;
+}
+
+bool MavrosBridge::landCallback(mavros_msgs::CommandTOL::Request& req, mavros_msgs::CommandTOL::Response& res)
+{
+    mavros_msgs::CommandTOL mavros_msg;
+    mavros_msg.request.altitude = req.altitude;
+    mavros_msg.request.latitude = req.latitude;
+    mavros_msg.request.longitude = req.longitude;
+    mavros_msg.request.min_pitch = req.min_pitch;
+    mavros_msg.request.yaw = req.yaw;
+
+    if(land_client_.call(mavros_msg)){
+        ROS_INFO("Land command sent");
+        res.success = true;
+        quadrotor_msgs::UpdateMode update_mode_msg;
+        update_mode_msg.request.mode = quadrotor_msgs::UpdateMode::Request::IDLE;
+        if (!update_mode_client_.call(update_mode_msg)){
+            ROS_ERROR("Failed to send IDLE command");
+            res.success = false;
+        }
+    }else{
+        ROS_ERROR("Failed to send land command");
+        res.success = false;
+    }
+    return true;
+}
+
+// deprecated, for LCM compatibility
 void MavrosBridge::takeoffMandCallback(swarm_msgs::CommandTOL msg)
 {
     if(msg.drone_id != self_id){
@@ -90,6 +140,7 @@ void MavrosBridge::takeoffMandCallback(swarm_msgs::CommandTOL msg)
     }
 }
 
+// deprecated, for LCM compatibility
 void MavrosBridge::landMandCallback(swarm_msgs::CommandTOL msg)
 {
     if(msg.drone_id != self_id){

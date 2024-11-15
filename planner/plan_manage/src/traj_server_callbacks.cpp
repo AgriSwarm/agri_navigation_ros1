@@ -31,12 +31,22 @@ bool TrajServer::updateModeCallback(quadrotor_msgs::UpdateMode::Request& req,
     {
         updateMode(NavigationMode::HOVER);
     }
+    else if (req.mode == quadrotor_msgs::UpdateMode::Request::POSHOLD)
+    {
+        updateMode(NavigationMode::POSHOLD);
+    }
     else
     {
         ROS_ERROR("[traj_server] Unrecognized mode!");
     }
     res.success = true;
     return true;
+}
+
+void TrajServer::statusCallback(const swarm_msgs::SystemStatus::ConstPtr &msg)
+{
+    status_cur_.infra_status = msg->infra_status;
+    status_cur_.ap_status = msg->ap_status;
 }
 
 void TrajServer::odomCallback(const nav_msgs::Odometry::ConstPtr &msg)

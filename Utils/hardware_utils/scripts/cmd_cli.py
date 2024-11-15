@@ -23,8 +23,8 @@ class MavrosBridgeClient:
         self.use_lcm = rospy.get_param('~use_lcm', False)
         
         # Publishers
-        # self.setpoint_position_pub = rospy.Publisher('/traj_server/setpoint_position', PositionCommand, queue_size=1)
-        self.setpoint_position_pub = rospy.Publisher('/mavros/setpoint_position/local', PoseStamped, queue_size=1)
+        self.setpoint_position_pub = rospy.Publisher('/traj_server/planning/setpoint_position', PositionCommand, queue_size=1)
+        # self.setpoint_position_pub = rospy.Publisher('/mavros/setpoint_position/local', PoseStamped, queue_size=1)
         self.target_marker_pub = rospy.Publisher('/cmd_gcs/setpoint_position_marker', Marker, queue_size=10)
         self.goal_pub = rospy.Publisher('/goal_with_id', GoalSet, queue_size=10)
 
@@ -77,33 +77,33 @@ class MavrosBridgeClient:
         self.position_target += np.array([dx, dy, dz])
 
         if self.mode == 'setpoint_position':
-            # cmd = PositionCommand()
-            # cmd.header.stamp = rospy.Time.now()
-            # cmd.header.frame_id = "world"
-            # cmd.drone_id = self.drone_id
-            # cmd.pose.position.x = self.position_target[0]
-            # cmd.pose.position.y = self.position_target[1]
-            # cmd.pose.position.z = self.position_target[2]
-            # cmd.pose.orientation.w = 1.0
-            # self.setpoint_position_pub.publish(cmd)
-            # print("Published setpoint: x=%.2f, y=%.2f, z=%.2f" % (
-            #     self.position_target[0], 
-            #     self.position_target[1], 
-            #     self.position_target[2]
-            # ))
-            cmd = PoseStamped()
+            cmd = PositionCommand()
             cmd.header.stamp = rospy.Time.now()
             cmd.header.frame_id = "world"
+            cmd.drone_id = self.drone_id
             cmd.pose.position.x = self.position_target[0]
             cmd.pose.position.y = self.position_target[1]
             cmd.pose.position.z = self.position_target[2]
             cmd.pose.orientation.w = 1.0
             self.setpoint_position_pub.publish(cmd)
             print("Published setpoint: x=%.2f, y=%.2f, z=%.2f" % (
-                self.position_target[0],
-                self.position_target[1],
+                self.position_target[0], 
+                self.position_target[1], 
                 self.position_target[2]
             ))
+            # cmd = PoseStamped()
+            # cmd.header.stamp = rospy.Time.now()
+            # cmd.header.frame_id = "world"
+            # cmd.pose.position.x = self.position_target[0]
+            # cmd.pose.position.y = self.position_target[1]
+            # cmd.pose.position.z = self.position_target[2]
+            # cmd.pose.orientation.w = 1.0
+            # self.setpoint_position_pub.publish(cmd)
+            # print("Published setpoint: x=%.2f, y=%.2f, z=%.2f" % (
+            #     self.position_target[0],
+            #     self.position_target[1],
+            #     self.position_target[2]
+            # ))
         else:  # goal mode
             goal_msg = GoalSet()
             goal_msg.drone_id = self.drone_id
@@ -183,7 +183,7 @@ class MavrosBridgeClient:
             return False
 
     def call_land_service(self):
-        service_name = '/mavros/cmd/land'
+        service_name = '/mavros_bridge/land'
 
         try:
             rospy.wait_for_service(service_name, timeout=5.0)
@@ -192,7 +192,7 @@ class MavrosBridgeClient:
             return False
         
         try:
-            takeoff_cl = rospy.ServiceProxy('/mavros/cmd/land', CommandTOLSrv)
+            takeoff_cl = rospy.ServiceProxy(service_name, CommandTOLSrv)
             response = takeoff_cl(altitude=1.0, latitude=0, longitude=0, min_pitch=0, yaw=0)
             rospy.loginfo(response)
             return True
@@ -201,7 +201,7 @@ class MavrosBridgeClient:
             return False
 
     def call_takeoff_service(self):
-        service_name = '/mavros/cmd/takeoff'
+        service_name = '/mavros_bridge/takeoff'
 
         try:
             rospy.wait_for_service(service_name, timeout=5.0)
@@ -210,7 +210,7 @@ class MavrosBridgeClient:
             return False
         
         try:
-            takeoff_cl = rospy.ServiceProxy('/mavros/cmd/takeoff', CommandTOLSrv)
+            takeoff_cl = rospy.ServiceProxy(service_name, CommandTOLSrv)
             response = takeoff_cl(altitude=1.0, latitude=0, longitude=0, min_pitch=0, yaw=0)
             rospy.loginfo(response)
             return True

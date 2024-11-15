@@ -21,6 +21,7 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~"), server_(config_mutex_)
     setpoint_pos_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("/mavros/setpoint_position/local", 10);
     setpoint_raw_pub_ = nh_.advertise<mavros_msgs::PositionTarget>("/mavros/setpoint_raw/local", 10);
     pict_state_pub_ = nh_.advertise<jsk_rviz_plugins::PictogramArray>("/hardware_bridge/system_status_pict", 10);
+    update_mode_client_ = nh_.serviceClient<quadrotor_msgs::UpdateMode>("/traj_server/update_mode");
 
     pub_temp0_ = nh_.advertise<std_msgs::Float32>("/hardware_bridge/cpu_temperature", 1);
     pub_temp1_ = nh_.advertise<std_msgs::Float32>("/hardware_bridge/gpu_temperature", 1);
@@ -44,12 +45,13 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~"), server_(config_mutex_)
     ap_ekf_pose_sub_ = nh_.subscribe("/mavros/local_position/pose", 1, &MavrosBridge::APEKFPoseCallback, this);
     
     status_sub_ = nh_.subscribe("/traj_server/system_status", 1, &MavrosBridge::statusCallback, this);
-    // takeoff_srv_ = nh_.advertiseService("/mavros_bridge/takeoff", &MavrosBridge::takeoffCallback, this);
 
     takeoff_mand_sub_ = nh_.subscribe("/hardware_bridge/takeoff_mand", 1, &MavrosBridge::takeoffMandCallback, this);
     land_mand_sub_ = nh_.subscribe("/hardware_bridge/land_mand", 1, &MavrosBridge::landMandCallback, this);
     takeoff_client_ = nh_.serviceClient<mavros_msgs::CommandTOL>("/mavros/cmd/takeoff");
     land_client_ = nh_.serviceClient<mavros_msgs::CommandTOL>("/mavros/cmd/land");
+    takeoff_srv_ = nh_.advertiseService("/mavros_bridge/takeoff", &MavrosBridge::takeoffCallback, this);
+    land_srv_ = nh_.advertiseService("/mavros_bridge/land", &MavrosBridge::landCallback, this);
 
     pose_sub_.reset(new message_filters::Subscriber<geometry_msgs::PoseStamped>(nh_, "/mavros/local_position/pose", 1));
     imu_sub_.reset(new message_filters::Subscriber<sensor_msgs::Imu>(nh_, "/mavros/imu/data", 1));

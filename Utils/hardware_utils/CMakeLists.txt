@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   mavros_msgs
   swarm_msgs
+  quadrotor_msgs
   dynamic_reconfigure
   JetsonGPIO
   message_generation
@@ -41,7 +42,7 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
   # LIBRARIES sensor_visualization
-  CATKIN_DEPENDS roscpp swarm_msgs message_runtime roslib
+  CATKIN_DEPENDS roscpp swarm_msgs quadrotor_msgs message_runtime roslib
   DEPENDS YAML_CPP
 )
 
