@@ -61,6 +61,8 @@ hardware_utils::PIDConfig MavrosBridge::getPIDParam() {
     std::tuple<bool, int, float> param;
     ros::Duration(2.0).sleep();
 
+    pullAndSetParams();
+
     for (const auto& param : params) {
         auto result = getParam(param.name);
         bool success = std::get<0>(result);
