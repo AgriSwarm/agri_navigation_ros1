@@ -59,7 +59,7 @@ void TrajServer::publishMavrosCmd(const DroneState &state)
     if (status_cur_.infra_status != swarm_msgs::SystemStatus::INFRA_ARMED ||
         status_cur_.ap_status != swarm_msgs::SystemStatus::AP_GUIDED)
     {
-        ROS_ERROR("[traj_server] Not ready to receive setpoint position command!");
+        ROS_ERROR("[TrajServer::publishMavrosCmd] Not ready to receive setpoint position command!");
         return;
     }
     
@@ -106,11 +106,66 @@ void TrajServer::publishMavrosCmd(const DroneState &state)
     
 }
 
+bool TrajServer::PureTargetControl(const DroneState &target_state)
+{
+    if (!odom_received_)
+    {
+        ROS_ERROR("[TrajServer::PureTargetControl] Not found odom state");
+        return false;
+    }
+
+    Eigen::Vector3d pos_error = target_state.pos - odom_state_.pos;
+    double yaw_error = target_state.yaw - odom_state_.yaw;
+    while (yaw_error > M_PI) yaw_error -= 2 * M_PI;
+    while (yaw_error < -M_PI) yaw_error += 2 * M_PI;
+    
+    const double kp_pos = 1.0;
+    const double kp_yaw = 2.0; 
+    double vel_limit = 2.0;
+    double yaw_rate_limit = 1.0;
+
+    DroneState cmd_state;
+    cmd_state.pos = target_state.pos;
+    cmd_state.vel = kp_pos * pos_error;
+
+    if (cmd_state.vel.norm() > vel_limit)
+    {
+        cmd_state.vel = cmd_state.vel.normalized() * vel_limit;
+    }
+    cmd_state.yaw = target_state.yaw;
+    cmd_state.yaw_rate = kp_yaw * yaw_error;
+    cmd_state.yaw_rate = std::max(std::min(cmd_state.yaw_rate, yaw_rate_limit), -yaw_rate_limit);
+
+    cmd_state.acc.setZero();
+    cmd_state.jerk.setZero();
+    cmd_state.snap.setZero();
+    cmd_state.yaw_acc = 0.0;
+    cmd_state.only_pose = true;
+
+    publishCmd(cmd_state);
+
+    // for visualization
+    geometry_msgs::TwistStamped twist;
+    twist.header.stamp = ros::Time::now();
+    twist.header.frame_id = "base_link";
+    twist.twist.angular.x = 0;
+    twist.twist.angular.y = 0;
+    twist.twist.angular.z = cmd_state.yaw_rate;
+    twist.twist.linear.x = cmd_state.vel(0);
+    twist.twist.linear.y = cmd_state.vel(1);
+    twist.twist.linear.z = cmd_state.vel(2);
+    twist_pub.publish(twist);
+    
+    bool reached = (pos_error.norm() < ctrl_pos_threshold_) && (std::abs(yaw_error) < ctrl_yaw_threshold_);
+    
+    return reached;
+}
+
 void TrajServer::publishCmd(const DroneState &state)
 {
     if(state.pos.norm() < 1e-6 && state.vel.norm() < 1e-6 && state.acc.norm() < 1e-6)
     {
-        ROS_ERROR("[traj_server] Invalid state command!");
+        ROS_ERROR("[TrajServer::publishCmd] Invalid state command!");
         return;
     }
     publishMavrosCmd(state);
@@ -134,7 +189,7 @@ void TrajServer::publishPinCmd()
     }
     else
     {
-        ROS_ERROR("[traj_server] Not found last state");
+        ROS_ERROR("[TrajServer::publishPinCmd] Not found last state");
     }
 }
 
@@ -142,7 +197,7 @@ void TrajServer::publishHoverCmd()
 {
     if(!odom_received_)
     {
-        ROS_ERROR("[traj_server] Not found odom state");
+        ROS_ERROR("[TrajServer::publishHoverCmd] Not found odom state");
         return;
     }
     DroneState state;

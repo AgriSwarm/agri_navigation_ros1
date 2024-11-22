@@ -11,6 +11,8 @@ TrajServer::TrajServer(ros::NodeHandle &nh) : nh_(nh)
     nh_.param("time_forward", time_forward_, -1.0);
     nh_.param("drone_id", drone_id_, 0);
     nh_.param("update_tracking_goal_threshold", update_tracking_goal_threshold_, 0.5);
+    nh_.param("ctrl_pos_threshold", ctrl_pos_threshold_, 0.1);
+    nh_.param("ctrl_yaw_threshold", ctrl_yaw_threshold_, 0.1);
     nh_.param<bool>("use_pin_cmd", use_pin_cmd_, false);
 
     ROS_INFO("[traj_server] root_tracking_threshold: %f", root_tracking_threshold_);
@@ -30,7 +32,7 @@ TrajServer::TrajServer(ros::NodeHandle &nh) : nh_(nh)
     // fake_pos_cmd_pub_ = nh_.advertise<quadrotor_msgs::PositionCommand>("/position_cmd", 1);
     // cf_full_state_cmd_pub_ = nh_.advertise<quadrotor_msgs::FullState>("/cmd_full_state", 1);
     // cf_position_cmd_pub_ = nh_.advertise<quadrotor_msgs::Position>("/cmd_position", 1);
-    goal_pub_ = nh_.advertise<quadrotor_msgs::GoalSet>("/goal_with_id", 1);
+    goal_pub_ = nh_.advertise<quadrotor_msgs::GoalSet>("planning/goal", 1);
     target_marker_pub_ = nh_.advertise<visualization_msgs::Marker>("/target_marker", 1);
 
     update_mode_srv_ = nh_.advertiseService("/update_mode", &TrajServer::updateModeCallback, this);
@@ -39,6 +41,7 @@ TrajServer::TrajServer(ros::NodeHandle &nh) : nh_(nh)
     poly_traj_sub_ = nh_.subscribe("planning/trajectory", 1, &TrajServer::polyTrajCallback, this);
     target_pose_sub_ = nh_.subscribe("planning/track_pose", 1, &TrajServer::targetPoseCallback, this);
     setpoint_pos_sub_ = nh_.subscribe("planning/setpoint_position", 1, &TrajServer::setpointPosCallback, this);
+    conservative_persuit_sub_ = nh_.subscribe("planning/conservative_persuit_goal", 1, &TrajServer::conservativePersuitCallback, this);
 
     heartbeat_sub_ = nh_.subscribe("heartbeat", 1, &TrajServer::heartbeatCallback, this);
     odom_sub_ = nh_.subscribe("planning/odom", 1, &TrajServer::odomCallback, this);

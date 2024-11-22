@@ -68,6 +68,23 @@ void TrajServer::heartbeatCallback(const std_msgs::Empty::ConstPtr &msg)
     heartbeat_time_ = ros::Time::now();
 }
 
+void TrajServer::conservativePersuitCallback(const quadrotor_msgs::GoalSet::ConstPtr &msg)
+{
+    if (msg->drone_id != drone_id_)
+    {
+        return;
+    }
+    reserved_goal_ = Eigen::Vector3d(msg->goal[0], msg->goal[1], msg->goal[2]);
+    // calculate yaw
+    Eigen::Vector3d diff = reserved_goal_ - odom_state_.pos;
+    
+    pursuit_state_.pos << odom_state_.pos(0), odom_state_.pos(1), odom_state_.pos(2);
+    double yaw = atan2(diff(1), diff(0));
+    pursuit_state_.yaw = yaw;
+    pursuit_state_.only_pose = true;
+    updateMode(NavigationMode::TURN_FOR_PERSUIT);
+}
+
 void TrajServer::polyTrajCallback(const traj_utils::PolyTraj::ConstPtr &msg)
 {
     if (msg->order != 5)
@@ -103,9 +120,10 @@ void TrajServer::polyTrajCallback(const traj_utils::PolyTraj::ConstPtr &msg)
     traj_duration_ = traj_->getTotalDuration();
     traj_id_ = msg->traj_id;
 
-    if (mode_ == NavigationMode::IDLE){
-        updateMode(NavigationMode::SEARCH);
-    }
+    // if (mode_ == NavigationMode::IDLE){
+    //     updateMode(NavigationMode::SEARCH);
+    // }
+    updateMode(NavigationMode::SEARCH);
 }
 
 void TrajServer::setpointPosCallback(const swarm_msgs::PositionCommand::ConstPtr &msg)
@@ -234,6 +252,13 @@ void TrajServer::cmdTimerCallback(const ros::TimerEvent &event)
     else if(mode_ == NavigationMode::POSHOLD)
     {
         publishPinCmd();
+    }
+    else if(mode_ == NavigationMode::TURN_FOR_PERSUIT)
+    {
+        if(PureTargetControl(pursuit_state_))
+        {
+            publishGoal(reserved_goal_);
+        }
     }
     else
     {

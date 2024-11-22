@@ -84,7 +84,8 @@ void Goal3DTool::onPoseSet(double x, double y, double z, double theta)
   goal_with_id.drone_id = 0;
   goal_with_id.goal[0] = x;
   goal_with_id.goal[1] = y;
-  goal_with_id.goal[2] = z;
+  // goal_with_id.goal[2] = z;
+  goal_with_id.goal[2] = 1.0;
   pub_droneID_goal_.publish(goal_with_id);
 }
 
