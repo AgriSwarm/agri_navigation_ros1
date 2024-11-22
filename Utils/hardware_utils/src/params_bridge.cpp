@@ -22,7 +22,7 @@ const std::vector<MavrosBridge::ParamPair> MavrosBridge::params = {
     {"PSC_ACCZ_P", &hardware_utils::PIDConfig::PSC_ACCZ_P},
     {"PSC_ACCZ_I", &hardware_utils::PIDConfig::PSC_ACCZ_I},
     {"PSC_ACCZ_D", &hardware_utils::PIDConfig::PSC_ACCZ_D},
-    {"VISO_DELAY_MS", &hardware_utils::PIDConfig::VISO_DELAY_MS}
+    // {"VISO_DELAY_MS", &hardware_utils::PIDConfig::VISO_DELAY_MS}
 };
 
 void MavrosBridge::configCallback(hardware_utils::PIDConfig& config, uint32_t level)
@@ -210,18 +210,18 @@ void MavrosBridge::pullAndSetParams()
     getResourcePath();
 
     // Git pull
-    std::string cmd = "cd " + ros::package::getPath("agri_resources") + "/config/ardupilot && git pull origin main";
-    int ret = system(cmd.c_str());
-    if (ret == -1) {
-        ROS_ERROR("Failed to execute command: %s", strerror(errno));
-        return;
-    } else {
-        int exit_status = WEXITSTATUS(ret);
-        if (exit_status != 0) {
-            ROS_ERROR("Git pull command failed with exit status: %d", exit_status);
-            return;
-        }
-    }
+    // std::string cmd = "cd " + ros::package::getPath("agri_resources") + "/config/ardupilot && git pull origin main";
+    // int ret = system(cmd.c_str());
+    // if (ret == -1) {
+    //     ROS_ERROR("Failed to execute command: %s", strerror(errno));
+    //     return;
+    // } else {
+    //     int exit_status = WEXITSTATUS(ret);
+    //     if (exit_status != 0) {
+    //         ROS_ERROR("Git pull command failed with exit status: %d", exit_status);
+    //         return;
+    //     }
+    // }
 
     try {
         YAML::Node config = YAML::LoadFile(yaml_path_);
