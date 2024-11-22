@@ -47,6 +47,11 @@ void TrajServer::statusCallback(const swarm_msgs::SystemStatus::ConstPtr &msg)
 {
     status_cur_.infra_status = msg->infra_status;
     status_cur_.ap_status = msg->ap_status;
+    if (status_cur_.infra_status != swarm_msgs::SystemStatus::INFRA_ARMED ||
+        status_cur_.ap_status != swarm_msgs::SystemStatus::AP_GUIDED)
+    {
+        updateMode(NavigationMode::IDLE);
+    }
 }
 
 void TrajServer::odomCallback(const nav_msgs::Odometry::ConstPtr &msg)
