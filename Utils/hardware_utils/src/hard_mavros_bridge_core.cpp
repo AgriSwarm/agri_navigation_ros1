@@ -71,7 +71,6 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~"), server_(config_mutex_)
 
     if (set_params_){
         setupStreamRate();
-        pullAndSetParams();
         hardware_utils::PIDConfig initial_config = getPIDParam();
         server_.setConfigDefault(initial_config);
         server_.updateConfig(initial_config);
