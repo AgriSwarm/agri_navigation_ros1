@@ -84,7 +84,7 @@ hardware_utils::PIDConfig MavrosBridge::getPIDParam() {
     }
     hardware_utils::PIDConfig config;
     std::tuple<bool, int, float> param;
-    ros::Duration(2.0).sleep();
+    // ros::Duration(2.0).sleep();
 
     pullAndSetParams();
 
@@ -112,8 +112,10 @@ std::tuple<bool, int, float> MavrosBridge::getParam(const std::string& param) {
                                 srv.response.value.integer, 
                                 srv.response.value.real);
     } else {
-        ROS_ERROR("Failed to call service ParamGet");
-        return std::make_tuple(false, 0, 0.0f);
+        ROS_ERROR("Failed to call service ParamGet, retrying...");
+        ros::Duration(1.0).sleep();
+        return getParam(param);
+        // return std::make_tuple(false, 0, 0.0f);
     }
 }
 
@@ -147,8 +149,10 @@ std::tuple<bool, int, float> MavrosBridge::setParam(const std::string& param, in
                                 srv.response.value.integer, 
                                 srv.response.value.real);
     } else {
-        ROS_ERROR("Failed to call service ParamSet");
-        return std::make_tuple(false, 0, 0.0f);
+        ROS_ERROR("Failed to call service ParamSet, retrying...");
+        ros::Duration(1.0).sleep();
+        return setParam(param, value_integer, value_real);
+        // return std::make_tuple(false, 0, 0.0f);
     }
 }
 
