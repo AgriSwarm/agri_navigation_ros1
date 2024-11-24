@@ -1,28 +1,50 @@
 #include "hard_mavros_bridge.h"
 
+// gen.add("VISO_DELAY_MS", int_t, 0, "VISO_DELAY_MS", 0, 0, 250)
+// gen.add("EK3_POSNE_M_NSE", double_t, 0, "EK3_POSNE_M_NSE", 0.5, 0.1, 10.0)
+// gen.add("EK3_ALT_M_NSE", double_t, 0, "EK3_ALT_M_NSE", 0.5, 0.1, 100.0)
+// gen.add("EK3_YAW_M_NSE", double_t, 0, "EK3_YAW_M_NSE", 0.5, 0.05, 1.0)
+// gen.add("VISO_POS_M_NSE", double_t, 0, "VISO_POS_M_NSE", 0.5, 0.1, 10.0)
+// gen.add("VISO_YAW_M_NSE", double_t, 0, "VISO_YAW_M_NSE", 0.5, 0.05, 1.0)
+// gen.add("EK3_POS_I_GATE", int_t, 0, "EK3_POS_I_GATE", 1000, 100, 1000)
+// gen.add("EK3_YAW_I_GATE", int_t, 0, "EK3_YAW_I_GATE", 1000, 100, 1000)
+// gen.add("EK3_VELD_M_NSE", double_t, 0, "EK3_VELD_M_NSE", 0.5, 0.05, 5.0)
+// gen.add("EK3_VELNE_M_NSE", double_t, 0, "EK3_VELNE_M_NSE", 0.5, 0.05, 5.0)
+// gen.add("EK3_ACC_P_NSE", double_t, 0, "EK3_ACC_P_NSE", 0.5, 0.01, 1.0)
+
 const std::vector<MavrosBridge::ParamPair> MavrosBridge::params = {
-    {"ATC_ANG_RLL_P", &hardware_utils::PIDConfig::ATC_ANG_RLL_P},
-    {"ATC_ANG_PIT_P", &hardware_utils::PIDConfig::ATC_ANG_PIT_P},
-    {"ATC_ANG_YAW_P", &hardware_utils::PIDConfig::ATC_ANG_YAW_P},
-    {"ATC_RAT_RLL_P", &hardware_utils::PIDConfig::ATC_RAT_RLL_P},
-    {"ATC_RAT_RLL_I", &hardware_utils::PIDConfig::ATC_RAT_RLL_I},
-    {"ATC_RAT_RLL_D", &hardware_utils::PIDConfig::ATC_RAT_RLL_D},
-    {"ATC_RAT_PIT_P", &hardware_utils::PIDConfig::ATC_RAT_PIT_P},
-    {"ATC_RAT_PIT_I", &hardware_utils::PIDConfig::ATC_RAT_PIT_I},
-    {"ATC_RAT_PIT_D", &hardware_utils::PIDConfig::ATC_RAT_PIT_D},
-    {"ATC_RAT_YAW_P", &hardware_utils::PIDConfig::ATC_RAT_YAW_P},
-    {"ATC_RAT_YAW_I", &hardware_utils::PIDConfig::ATC_RAT_YAW_I},
-    {"ATC_RAT_YAW_D", &hardware_utils::PIDConfig::ATC_RAT_YAW_D},
-    {"PSC_POSXY_P", &hardware_utils::PIDConfig::PSC_POSXY_P},
-    {"PSC_POSZ_P", &hardware_utils::PIDConfig::PSC_POSZ_P},
-    {"PSC_VELXY_P", &hardware_utils::PIDConfig::PSC_VELXY_P},
-    {"PSC_VELXY_I", &hardware_utils::PIDConfig::PSC_VELXY_I},
-    {"PSC_VELZ_P", &hardware_utils::PIDConfig::PSC_VELZ_P},
-    {"PSC_VELZ_I", &hardware_utils::PIDConfig::PSC_VELZ_I},
-    {"PSC_ACCZ_P", &hardware_utils::PIDConfig::PSC_ACCZ_P},
-    {"PSC_ACCZ_I", &hardware_utils::PIDConfig::PSC_ACCZ_I},
-    {"PSC_ACCZ_D", &hardware_utils::PIDConfig::PSC_ACCZ_D},
-    // {"VISO_DELAY_MS", &hardware_utils::PIDConfig::VISO_DELAY_MS}
+    {"ATC_ANG_RLL_P", &hardware_utils::PIDConfig::ATC_ANG_RLL_P, false},
+    {"ATC_ANG_PIT_P", &hardware_utils::PIDConfig::ATC_ANG_PIT_P, false},
+    {"ATC_ANG_YAW_P", &hardware_utils::PIDConfig::ATC_ANG_YAW_P, false},
+    {"ATC_RAT_RLL_P", &hardware_utils::PIDConfig::ATC_RAT_RLL_P, false},
+    {"ATC_RAT_RLL_I", &hardware_utils::PIDConfig::ATC_RAT_RLL_I, false},
+    {"ATC_RAT_RLL_D", &hardware_utils::PIDConfig::ATC_RAT_RLL_D, false},
+    {"ATC_RAT_PIT_P", &hardware_utils::PIDConfig::ATC_RAT_PIT_P, false},
+    {"ATC_RAT_PIT_I", &hardware_utils::PIDConfig::ATC_RAT_PIT_I, false},
+    {"ATC_RAT_PIT_D", &hardware_utils::PIDConfig::ATC_RAT_PIT_D, false},
+    {"ATC_RAT_YAW_P", &hardware_utils::PIDConfig::ATC_RAT_YAW_P, false},
+    {"ATC_RAT_YAW_I", &hardware_utils::PIDConfig::ATC_RAT_YAW_I, false},
+    {"ATC_RAT_YAW_D", &hardware_utils::PIDConfig::ATC_RAT_YAW_D, false},
+    {"PSC_POSXY_P", &hardware_utils::PIDConfig::PSC_POSXY_P, false},
+    {"PSC_POSZ_P", &hardware_utils::PIDConfig::PSC_POSZ_P, false},
+    {"PSC_VELXY_P", &hardware_utils::PIDConfig::PSC_VELXY_P, false},
+    {"PSC_VELXY_I", &hardware_utils::PIDConfig::PSC_VELXY_I, false},
+    {"PSC_VELZ_P", &hardware_utils::PIDConfig::PSC_VELZ_P, false},
+    {"PSC_VELZ_I", &hardware_utils::PIDConfig::PSC_VELZ_I, false},
+    {"PSC_ACCZ_P", &hardware_utils::PIDConfig::PSC_ACCZ_P, false},
+    {"PSC_ACCZ_I", &hardware_utils::PIDConfig::PSC_ACCZ_I, false},
+    {"PSC_ACCZ_D", &hardware_utils::PIDConfig::PSC_ACCZ_D, false},
+    {"VISO_DELAY_MS", &hardware_utils::PIDConfig::VISO_DELAY_MS, true},
+    {"EK3_POSNE_M_NSE", &hardware_utils::PIDConfig::EK3_POSNE_M_NSE, false},
+    {"EK3_ALT_M_NSE", &hardware_utils::PIDConfig::EK3_ALT_M_NSE, false},
+    {"EK3_YAW_M_NSE", &hardware_utils::PIDConfig::EK3_YAW_M_NSE, false},
+    {"VISO_POS_M_NSE", &hardware_utils::PIDConfig::VISO_POS_M_NSE, false},
+    {"VISO_YAW_M_NSE", &hardware_utils::PIDConfig::VISO_YAW_M_NSE, false},
+    {"EK3_POS_I_GATE", &hardware_utils::PIDConfig::EK3_POS_I_GATE, true}, // integer
+    {"EK3_YAW_I_GATE", &hardware_utils::PIDConfig::EK3_YAW_I_GATE, true}, // integer
+    {"EK3_VELD_M_NSE", &hardware_utils::PIDConfig::EK3_VELD_M_NSE, false},
+    {"EK3_VELNE_M_NSE", &hardware_utils::PIDConfig::EK3_VELNE_M_NSE, false},
+    {"EK3_ACC_P_NSE", &hardware_utils::PIDConfig::EK3_ACC_P_NSE, false},
 };
 
 void MavrosBridge::configCallback(hardware_utils::PIDConfig& config, uint32_t level)
@@ -31,7 +53,10 @@ void MavrosBridge::configCallback(hardware_utils::PIDConfig& config, uint32_t le
 
     for (const auto& param : params) {
         if (config.*(param.value) != config_last_.*(param.value)) {
-            setParam(param.name, 0, config.*(param.value));
+            if (param.integer)
+                setParam(param.name, static_cast<int>(config.*(param.value)), 0);
+            else
+                setParam(param.name, 0, config.*(param.value));
             // ROS_INFO("Set %s to %f", param.name.c_str(), config.*(param.value));
         }
     }
@@ -66,9 +91,11 @@ hardware_utils::PIDConfig MavrosBridge::getPIDParam() {
     for (const auto& param : params) {
         auto result = getParam(param.name);
         bool success = std::get<0>(result);
-        float value = std::get<2>(result);
         if (success) {
-            config.*(param.value) = value;
+            if (param.integer)
+                config.*(param.value) = static_cast<double>(std::get<1>(result));
+            else
+                config.*(param.value) = std::get<2>(result);
         }
     }
 

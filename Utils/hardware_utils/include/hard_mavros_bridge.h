@@ -62,6 +62,7 @@ public:
     struct ParamPair {
         std::string name;
         double hardware_utils::PIDConfig::*value;
+        bool integer;
     };
 
     static const std::vector<ParamPair> params;
