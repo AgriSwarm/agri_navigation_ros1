@@ -42,6 +42,7 @@ TrajServer::TrajServer(ros::NodeHandle &nh) : nh_(nh)
     target_pose_sub_ = nh_.subscribe("planning/track_pose", 1, &TrajServer::targetPoseCallback, this);
     setpoint_pos_sub_ = nh_.subscribe("planning/setpoint_position", 1, &TrajServer::setpointPosCallback, this);
     conservative_persuit_sub_ = nh_.subscribe("planning/conservative_persuit_goal", 1, &TrajServer::conservativePersuitCallback, this);
+    emergency_stop_sub_ = nh_.subscribe("planning/emergency_stop", 1, &TrajServer::emergencyStopCallback, this);
 
     heartbeat_sub_ = nh_.subscribe("heartbeat", 1, &TrajServer::heartbeatCallback, this);
     odom_sub_ = nh_.subscribe("planning/odom", 1, &TrajServer::odomCallback, this);

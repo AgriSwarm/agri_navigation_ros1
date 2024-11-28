@@ -68,6 +68,13 @@ void TrajServer::heartbeatCallback(const std_msgs::Empty::ConstPtr &msg)
     heartbeat_time_ = ros::Time::now();
 }
 
+void TrajServer::emergencyStopCallback(const std_msgs::Empty &msg)
+{
+    // TODO: implement emergency stop
+    updateMode(NavigationMode::POSHOLD);
+    resetTraj();
+}
+
 void TrajServer::conservativePersuitCallback(const quadrotor_msgs::GoalSet::ConstPtr &msg)
 {
     if (msg->drone_id != drone_id_)
@@ -196,31 +203,8 @@ void TrajServer::cmdTimerCallback(const ros::TimerEvent &event)
         ROS_ERROR("[traj_server] Lost heartbeat from the planner, is it dead?");
     }
 
-    if(mode_ == NavigationMode::SEARCH || mode_ == NavigationMode::APPROACH)
+    if(mode_ == NavigationMode::SEARCH || mode_ == NavigationMode::APPROACH || mode_ == NavigationMode::ROOT_TRACK)
     {
-        double t_cur = (time_now - traj_start_time_).toSec();
-        if (t_cur < traj_duration_ && t_cur >= 0.0)
-        {
-            // PolynomialTrajectoryを追従
-            DroneState state;
-            state.pos = traj_->getPos(t_cur);
-            state.vel = traj_->getVel(t_cur);
-            state.acc = traj_->getAcc(t_cur);
-            state.jerk = traj_->getJer(t_cur);
-            std::pair<double, double> yaw_yawdot(0, 0);
-            yaw_yawdot = calculate_yaw(t_cur, mode_);
-            state.yaw = yaw_yawdot.first;
-            state.yaw_rate = yaw_yawdot.second;
-            publishCmd(state);
-        }
-        else if (use_pin_cmd_)
-        {
-            publishPinCmd();
-        }
-    }
-    else if(mode_ == NavigationMode::ROOT_TRACK)
-    {
-        // ROS_ERROR("Not Implemented ROOT_TRACKING!");
         double t_cur = (time_now - traj_start_time_).toSec();
         if (t_cur < traj_duration_ && t_cur >= 0.0)
         {

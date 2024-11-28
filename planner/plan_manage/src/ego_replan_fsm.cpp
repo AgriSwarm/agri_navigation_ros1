@@ -52,6 +52,7 @@ namespace ego_planner
     data_disp_pub_ = nh.advertise<traj_utils::DataDisp>("planning/data_display", 100);
     heartbeat_pub_ = nh.advertise<std_msgs::Empty>("planning/heartbeat", 10);
     ground_height_pub_ = nh.advertise<std_msgs::Float64>("/ground_height_measurement", 10);
+    emergency_stop_pub_ = nh.advertise<std_msgs::Empty>("planning/emergency_stop", 10);
 
     if (target_type_ == TARGET_TYPE::MANUAL_TARGET)
     {
@@ -455,8 +456,9 @@ namespace ego_planner
     traj_utils::PolyTraj poly_msg;
     traj_utils::MINCOTraj MINCO_msg;
     polyTraj2ROSMsg(poly_msg, MINCO_msg);
-    poly_traj_pub_.publish(poly_msg);
-    broadcast_ploytraj_pub_.publish(MINCO_msg);
+    // poly_traj_pub_.publish(poly_msg);
+    // broadcast_ploytraj_pub_.publish(MINCO_msg);
+    emergency_stop_pub_.publish(std_msgs::Empty());
 
     return true;
   }

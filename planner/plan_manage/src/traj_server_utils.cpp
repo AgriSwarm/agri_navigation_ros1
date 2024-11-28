@@ -92,6 +92,12 @@ std::pair<double, double> TrajServer::calculate_yaw(double t_cur, NavigationMode
     // TODO: implement this
     double yaw = 0.0;
     double yaw_rate = 0.0;
+
+    if (t_cur >= traj_duration_ || t_cur < 0.0 || time_forward_ < 0.0)
+    {
+        return std::make_pair(yaw, yaw_rate);
+    }
+
     if (mode == NavigationMode::ROOT_TRACK)
     {
         Eigen::Vector3d cmd_pos = traj_->getPos(t_cur);
@@ -99,15 +105,33 @@ std::pair<double, double> TrajServer::calculate_yaw(double t_cur, NavigationMode
         double x = target_pose_.center(0) - cmd_pos(0);
         yaw = atan2(y, x);
         yaw_rate = 0.0;
-    }
-    else{
-        if (t_cur < traj_duration_ && t_cur >= 0.0)
+    }else{
+        // if (t_cur < traj_duration_ && t_cur >= 0.0)
+        // {
+        //     Eigen::Vector3d vel = traj_->getVel(t_cur);
+        //     yaw = atan2(vel(1), vel(0));
+        //     yaw_rate = 0.0;
+        // }
+        Eigen::Vector3d dir;
+        if (t_cur + time_forward_ <= traj_duration_)
         {
-            Eigen::Vector3d vel = traj_->getVel(t_cur);
-            yaw = atan2(vel(1), vel(0));
-            yaw_rate = 0.0;
+            dir = traj_->getPos(t_cur + time_forward_) - traj_->getPos(t_cur);
+        }else{
+            dir = traj_->getPos(traj_duration_) - traj_->getPos(t_cur);
         }
+        if (dir.norm() > 1e-6)
+        {
+            yaw = atan2(dir(1), dir(0));
+        }else{
+            yaw = last_yaw_;
+        }
+        
+        yaw_rate = 0.0;
     }
+
+    last_yaw_ = yaw;
+    last_yaw_dot_ = yaw_rate;
+
     return std::make_pair(yaw, yaw_rate);
 }
 

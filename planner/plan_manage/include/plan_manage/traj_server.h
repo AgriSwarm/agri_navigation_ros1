@@ -62,7 +62,7 @@ class TrajServer
 
     private:
         ros::NodeHandle nh_;
-        ros::Subscriber poly_traj_sub_, target_pose_sub_, heartbeat_sub_, odom_sub_, setpoint_pos_sub_, status_sub_, conservative_persuit_sub_;
+        ros::Subscriber poly_traj_sub_, target_pose_sub_, heartbeat_sub_, odom_sub_, setpoint_pos_sub_, status_sub_, conservative_persuit_sub_, emergency_stop_sub_;
         // fake drone
         ros::Publisher fake_pos_cmd_pub_, status_pub_;
         // crazyflie
@@ -75,6 +75,7 @@ class TrajServer
         double update_goal_threshold_, root_tracking_threshold_, update_tracking_goal_threshold_;
         double time_forward_;
         double ctrl_pos_threshold_, ctrl_yaw_threshold_;
+        double last_yaw_, last_yaw_dot_;
         ros::Time traj_start_time_, heartbeat_time_;
         NavigationMode mode_;
         int traj_id_;
@@ -97,6 +98,8 @@ class TrajServer
 
         void cmdTimerCallback(const ros::TimerEvent &event);
         void statusCallback(const swarm_msgs::SystemStatus::ConstPtr &msg);
+        void emergencyStopCallback(const std_msgs::Empty &msg);
+
         void publishCmd(const DroneState &state);
         void publishFakeCmd(const DroneState &state);
         // void publishCFCmd(const DroneState &state);

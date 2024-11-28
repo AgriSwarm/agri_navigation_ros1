@@ -34,7 +34,7 @@ const std::vector<MavrosBridge::ParamPair> MavrosBridge::params = {
     {"PSC_ACCZ_P", &hardware_utils::PIDConfig::PSC_ACCZ_P, false},
     {"PSC_ACCZ_I", &hardware_utils::PIDConfig::PSC_ACCZ_I, false},
     {"PSC_ACCZ_D", &hardware_utils::PIDConfig::PSC_ACCZ_D, false},
-    {"VISO_DELAY_MS", &hardware_utils::PIDConfig::VISO_DELAY_MS, true},
+    {"VISO_DELAY_MS", &hardware_utils::PIDConfig::VISO_DELAY_MS, true}, // integer
     {"EK3_POSNE_M_NSE", &hardware_utils::PIDConfig::EK3_POSNE_M_NSE, false},
     {"EK3_ALT_M_NSE", &hardware_utils::PIDConfig::EK3_ALT_M_NSE, false},
     {"EK3_YAW_M_NSE", &hardware_utils::PIDConfig::EK3_YAW_M_NSE, false},
