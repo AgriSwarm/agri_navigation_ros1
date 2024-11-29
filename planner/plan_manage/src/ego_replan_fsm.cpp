@@ -804,6 +804,10 @@ namespace ego_planner
 
     /* Ignore the trajectories that are far away */
     Eigen::MatrixXd cps_chk = MJO.getInitConstraintPoints(5); // K = 5, such accuracy is sufficient
+
+    // Visualize the received trajectory
+    visualization_->displaySwarmList(cps_chk, 0, recv_id);
+    
     bool far_away = true;
     for (int i = 0; i < cps_chk.cols(); ++i)
     {
@@ -904,6 +908,7 @@ namespace ego_planner
     MINCO_msg.inner_x.resize(piece_num - 1);
     MINCO_msg.inner_y.resize(piece_num - 1);
     MINCO_msg.inner_z.resize(piece_num - 1);
+    MINCO_msg.piece_num = piece_num;
     Eigen::MatrixXd pos = data->traj.getPositions();
     for (int i = 0; i < piece_num - 1; i++)
     {

@@ -4,6 +4,8 @@ time start_time
 float32 des_clearance
 
 uint8 order
+uint8 piece_num
+
 float32[3] start_p
 float32[3] start_v
 float32[3] start_a

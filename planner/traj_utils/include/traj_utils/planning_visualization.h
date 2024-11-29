@@ -25,6 +25,7 @@ namespace ego_planner
     ros::Publisher failed_list_pub;
     ros::Publisher a_star_list_pub;
     ros::Publisher guide_vector_pub;
+    std::vector<ros::Publisher> swarm_list_pub;
 
     ros::Publisher intermediate_pt0_pub;
     ros::Publisher intermediate_pt1_pub;
@@ -53,6 +54,7 @@ namespace ego_planner
     void displayInitPathList(vector<Eigen::Vector3d> init_pts, const double scale, int id);
     void displayMultiInitPathList(vector<vector<Eigen::Vector3d>> init_trajs, const double scale);
     void displayMultiOptimalPathList(vector<vector<Eigen::Vector3d>> optimal_trajs, const double scale);
+    void displaySwarmList(Eigen::MatrixXd optimal_pts, int id, int drone_id);
     void displayOptimalList(Eigen::MatrixXd optimal_pts, int id);
     void displayFailedList(Eigen::MatrixXd failed_pts, int id);
     void displayAStarList(std::vector<std::vector<Eigen::Vector3d>> a_star_paths, int id);

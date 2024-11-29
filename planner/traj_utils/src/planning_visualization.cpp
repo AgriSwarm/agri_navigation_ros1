@@ -14,6 +14,10 @@ namespace ego_planner
     optimal_list_pub = nh.advertise<visualization_msgs::Marker>("optimal_list", 2);
     failed_list_pub = nh.advertise<visualization_msgs::Marker>("failed_list", 2);
     a_star_list_pub = nh.advertise<visualization_msgs::Marker>("a_star_list", 20);
+    for (int i = 0; i < 4; i++)
+    {
+      swarm_list_pub.push_back(nh.advertise<visualization_msgs::Marker>("swarm_list" + std::to_string(i), 2));
+    }
 
     // intermediate_pt0_pub = nh.advertise<visualization_msgs::Marker>("pt0_dur_opt", 10);
     // intermediate_grad0_pub = nh.advertise<visualization_msgs::MarkerArray>("grad0_dur_opt", 10);
@@ -242,6 +246,23 @@ namespace ego_planner
       last_nums++;
     }
 
+  }
+
+  void PlanningVisualization::displaySwarmList(Eigen::MatrixXd optimal_pts, int id, int drone_id)
+  {
+    if (swarm_list_pub[drone_id].getNumSubscribers() == 0)
+    {
+      return;
+    }
+
+    vector<Eigen::Vector3d> list;
+    for (int i = 0; i < optimal_pts.cols(); i++)
+    {
+      Eigen::Vector3d pt = optimal_pts.col(i).transpose();
+      list.push_back(pt);
+    }
+    Eigen::Vector4d color(1, 0, 0, 1);
+    displayMarkerList(swarm_list_pub[drone_id], list, 0.15, color, id);
   }
 
   void PlanningVisualization::displayOptimalList(Eigen::MatrixXd optimal_pts, int id)

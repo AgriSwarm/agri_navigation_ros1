@@ -145,6 +145,7 @@ void Traj2ROSMsg(const poly_traj::Trajectory &traj, const double des_clear, cons
   MINCO_msg.inner_x.resize(piece_num - 1);
   MINCO_msg.inner_y.resize(piece_num - 1);
   MINCO_msg.inner_z.resize(piece_num - 1);
+  MINCO_msg.piece_nums = piece_nums;
   Eigen::MatrixXd pos = traj.getPositions();
   for (int i = 0; i < piece_num - 1; i++)
   {

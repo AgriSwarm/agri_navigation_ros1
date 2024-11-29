@@ -1,6 +1,7 @@
 Header header
 
 # the trajectory id, starts from "1".
+uint32 drone_id
 uint32 trajectory_id
 
 # the action command for trajectory server.
@@ -14,6 +15,7 @@ uint32 action
 # the order of trajectory.
 uint32 num_order
 uint32 num_segment
+uint32  num_coef
 
 # the polynomial coecfficients of the trajectory.
 float64 start_yaw
