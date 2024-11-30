@@ -267,10 +267,9 @@ namespace ego_planner
       }
       else
       {
-        if (enable_fail_safe_ && odom_vel_.norm() < 0.1)
+        if (enable_fail_safe_ && odom_vel_.norm() < 0.1 && !map->getOdomDepthTimeout())
           changeFSMExecState(GEN_NEW_TRAJ, "FSM");
       }
-
       flag_escape_emergency_ = false;
       break;
     }
@@ -356,7 +355,7 @@ namespace ego_planner
     if (map->getOdomDepthTimeout())
     {
       ROS_ERROR("Depth Lost! EMERGENCY_STOP");
-      enable_fail_safe_ = false;
+      // enable_fail_safe_ = false;
       changeFSMExecState(EMERGENCY_STOP, "SAFETY");
     }
 

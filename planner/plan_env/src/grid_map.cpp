@@ -434,6 +434,7 @@
 
     md_.occ_need_update_ = true;
     md_.flag_have_ever_received_depth_ = true;
+    md_.flag_depth_odom_timeout_ = false;
     }
 
     void GridMap::depthOdomCallback(const sensor_msgs::ImageConstPtr &img,
@@ -495,6 +496,7 @@
 
     md_.occ_need_update_ = true;
     md_.flag_have_ever_received_depth_ = true;
+    md_.flag_depth_odom_timeout_ = false;
     }
 
     void GridMap::odomCallback(const nav_msgs::OdometryConstPtr &odom)
@@ -1027,9 +1029,9 @@
     {
         if (md_.flag_have_ever_received_depth_ && (ros::Time::now() - md_.last_occ_update_time_).toSec() > mp_.odom_depth_timeout_)
         {
-        ROS_ERROR("odom or depth lost! ros::Time::now()=%f, md_.last_occ_update_time_=%f, mp_.odom_depth_timeout_=%f",
-                    ros::Time::now().toSec(), md_.last_occ_update_time_.toSec(), mp_.odom_depth_timeout_);
-        md_.flag_depth_odom_timeout_ = true;
+            ROS_ERROR("odom or depth lost! ros::Time::now()=%f, md_.last_occ_update_time_=%f, mp_.odom_depth_timeout_=%f",
+                        ros::Time::now().toSec(), md_.last_occ_update_time_.toSec(), mp_.odom_depth_timeout_);
+            md_.flag_depth_odom_timeout_ = true;
         }
         return false;
     }
