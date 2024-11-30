@@ -267,7 +267,7 @@ namespace ego_planner
       }
       else
       {
-        if (enable_fail_safe_ && odom_vel_.norm() < 0.1 && !map->getOdomDepthTimeout())
+        if (enable_fail_safe_ && odom_vel_.norm() < 0.1 && !planner_manager_->grid_map_->getOdomDepthTimeout())
           changeFSMExecState(GEN_NEW_TRAJ, "FSM");
       }
       flag_escape_emergency_ = false;

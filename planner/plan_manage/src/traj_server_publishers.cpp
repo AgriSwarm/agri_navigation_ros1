@@ -103,7 +103,6 @@ void TrajServer::publishMavrosCmd(const DroneState &state)
         twist.twist.linear.z = state.vel(2);
         twist_pub.publish(twist);
     }
-    
 }
 
 bool TrajServer::PureTargetControl(const DroneState &target_state)
