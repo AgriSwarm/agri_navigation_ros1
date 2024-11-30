@@ -9,6 +9,7 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~"), server_(config_mutex_)
     pnh_.param<bool>("set_params", set_params_, false);
     pnh_.param<float>("vio_align_interval", vio_align_interval_, 1.0);
     pnh_.param<std::string>("ap_param_type", ap_param_type_, "vanilla");
+    pnh_.param<bool>("debug_mode", debug_mode_, false);
 
     status_cur_.drone_id = self_id;
 

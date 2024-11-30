@@ -59,8 +59,8 @@ void TrajServer::publishMavrosCmd(const DroneState &state)
     if (status_cur_.infra_status != swarm_msgs::SystemStatus::INFRA_ARMED ||
         status_cur_.ap_status != swarm_msgs::SystemStatus::AP_GUIDED)
     {
-        // ROS_ERROR("[TrajServer::publishMavrosCmd] Not ready to receive setpoint position command!");
-        // return;
+        ROS_ERROR("[TrajServer::publishMavrosCmd] Not ready to receive setpoint position command!");
+        return;
     }
     
     if(state.only_pose)

@@ -18,6 +18,12 @@ void MavrosBridge::stateCallback(mavros_msgs::State msg)
     }
     status_cur_.ap_status = msg.mode;
 
+    if (debug_mode_)
+    {
+        status_cur_.infra_status = swarm_msgs::SystemStatus::INFRA_ARMED;
+        status_cur_.ap_status = swarm_msgs::SystemStatus::AP_GUIDED;
+    }
+
     if (!ap_initialized_ && nav_initialized_)
     {
         initialSetup();
