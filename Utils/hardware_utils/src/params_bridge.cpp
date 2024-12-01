@@ -45,6 +45,7 @@ const std::vector<MavrosBridge::ParamPair> MavrosBridge::params = {
     {"EK3_VELD_M_NSE", &hardware_utils::PIDConfig::EK3_VELD_M_NSE, false},
     {"EK3_VELNE_M_NSE", &hardware_utils::PIDConfig::EK3_VELNE_M_NSE, false},
     {"EK3_ACC_P_NSE", &hardware_utils::PIDConfig::EK3_ACC_P_NSE, false},
+    {"EK3_GYRO_P_NSE", &hardware_utils::PIDConfig::EK3_GYRO_P_NSE, false},
 };
 
 void MavrosBridge::configCallback(hardware_utils::PIDConfig& config, uint32_t level)
