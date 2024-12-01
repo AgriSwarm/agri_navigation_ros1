@@ -131,7 +131,11 @@ std::tuple<bool, int, float> MavrosBridge::setParam(const std::string& param, in
             ROS_INFO("Successfully set %s to int: %ld, real: %f", param.c_str(), srv.response.value.integer, srv.response.value.real);
             try {
                 YAML::Node config = YAML::LoadFile(yaml_path_);
-                config[param] = value_real;
+                // config[param] = value_real;
+                if (value_integer != 0)
+                    config[param] = value_integer;
+                else
+                    config[param] = value_real;
                 std::ofstream fout(yaml_path_);
                 fout << config;
                 fout.close();
@@ -262,9 +266,17 @@ void MavrosBridge::pullAndSetParams()
         // パラメータの設定
         for (const auto& param : params) {
             if (config[param.name]) {
-                float value = config[param.name].as<float>();
-                setParam(param.name, 0, value);
-                ROS_INFO("Set parameter %s to %f", param.name.c_str(), value);
+                // float value = config[param.name].as<float>();
+                // setParam(param.name, 0, value);
+                if (param.integer) {
+                    int value = config[param.name].as<int>();
+                    setParam(param.name, value, 0);
+                    ROS_INFO("Set parameter %s to %d", param.name.c_str(), value);
+                } else {
+                    float value = config[param.name].as<float>();
+                    setParam(param.name, 0, value);
+                    ROS_INFO("Set parameter %s to %f", param.name.c_str(), value);
+                }
             }
         }
     } catch (YAML::Exception& e) {
