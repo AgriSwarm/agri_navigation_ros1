@@ -144,16 +144,16 @@ bool TrajServer::PureTargetControl(const DroneState &target_state)
     publishCmd(cmd_state);
 
     // for visualization
-    geometry_msgs::TwistStamped twist;
-    twist.header.stamp = ros::Time::now();
-    twist.header.frame_id = "base_link";
-    twist.twist.angular.x = 0;
-    twist.twist.angular.y = 0;
-    twist.twist.angular.z = cmd_state.yaw_rate;
-    twist.twist.linear.x = cmd_state.vel(0);
-    twist.twist.linear.y = cmd_state.vel(1);
-    twist.twist.linear.z = cmd_state.vel(2);
-    twist_pub.publish(twist);
+    // geometry_msgs::TwistStamped twist;
+    // twist.header.stamp = ros::Time::now();
+    // twist.header.frame_id = "base_link";
+    // twist.twist.angular.x = 0;
+    // twist.twist.angular.y = 0;
+    // twist.twist.angular.z = cmd_state.yaw_rate;
+    // twist.twist.linear.x = cmd_state.vel(0);
+    // twist.twist.linear.y = cmd_state.vel(1);
+    // twist.twist.linear.z = cmd_state.vel(2);
+    // twist_pub.publish(twist);
     
     bool reached = (pos_error.norm() < ctrl_pos_threshold_) && (std::abs(yaw_error) < ctrl_yaw_threshold_);
     

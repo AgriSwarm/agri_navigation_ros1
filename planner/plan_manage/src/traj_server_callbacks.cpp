@@ -241,6 +241,7 @@ void TrajServer::cmdTimerCallback(const ros::TimerEvent &event)
     {
         if(PureTargetControl(pursuit_state_))
         {
+            ros::Duration(2.0).sleep();
             publishGoal(reserved_goal_);
         }
     }
