@@ -1056,13 +1056,11 @@
             for (double zd = lbz + mp_.resolution_ / 2; zd <= ubz; zd += mp_.resolution_)
             {
                 Eigen::Vector3d relative_dir = (Eigen::Vector3d(xd, yd, zd) - md_.camera_pos_);
-                if (md_.occupancy_buffer_[globalIdx2BufIdx(pos2GlobalIdx(Eigen::Vector3d(xd, yd, zd)))] >= mp_.min_occupancy_log_)
+                if (heading.dot(relative_dir.normalized()) > 0.5)
+                {
+                    if (md_.occupancy_buffer_[globalIdx2BufIdx(pos2GlobalIdx(Eigen::Vector3d(xd, yd, zd)))] >= mp_.min_occupancy_log_)
                     cloud.push_back(pcl::PointXYZ(xd, yd, zd));
-                // if (heading.dot(relative_dir.normalized()) > 0.5)
-                // {
-                //     if (md_.occupancy_buffer_[globalIdx2BufIdx(pos2GlobalIdx(Eigen::Vector3d(xd, yd, zd)))] >= mp_.min_occupancy_log_)
-                //     cloud.push_back(pcl::PointXYZ(xd, yd, zd));
-                // }
+                }
             }
 
     cloud.width = cloud.points.size();
@@ -1091,13 +1089,11 @@
             for (double zd = lbz + mp_.resolution_ / 2; zd < ubz; zd += mp_.resolution_)
             {
                 Eigen::Vector3d relative_dir = (Eigen::Vector3d(xd, yd, zd) - md_.camera_pos_);
-                if (md_.occupancy_buffer_inflate_[globalIdx2InfBufIdx(pos2GlobalIdx(Eigen::Vector3d(xd, yd, zd)))])
-                    cloud.push_back(pcl::PointXYZ(xd, yd, zd));
-                // if (heading.dot(relative_dir.normalized()) > 0.5)
-                // {
-                //     if (md_.occupancy_buffer_inflate_[globalIdx2InfBufIdx(pos2GlobalIdx(Eigen::Vector3d(xd, yd, zd)))])
-                //         cloud.push_back(pcl::PointXYZ(xd, yd, zd));
-                // }
+                if (heading.dot(relative_dir.normalized()) > 0.5)
+                {
+                    if (md_.occupancy_buffer_inflate_[globalIdx2InfBufIdx(pos2GlobalIdx(Eigen::Vector3d(xd, yd, zd)))])
+                        cloud.push_back(pcl::PointXYZ(xd, yd, zd));
+                }
             }
     cloud.width = cloud.points.size();
     cloud.height = 1;
