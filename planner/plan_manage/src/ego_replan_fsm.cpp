@@ -602,9 +602,29 @@ namespace ego_planner
     {
       Eigen::Vector3d orig_goal = final_goal_;
       double t_step = planner_manager_->grid_map_->getResolution() / planner_manager_->pp_.max_vel_;
-      for (double t = planner_manager_->traj_.global_traj.duration; t > 0; t -= t_step)
+      // for (double t = planner_manager_->traj_.global_traj.duration; t > 0; t -= t_step)
+      // {
+      //   Eigen::Vector3d pt = planner_manager_->traj_.global_traj.traj.getPos(t);
+      //   if (!planner_manager_->grid_map_->getInflateOccupancy(pt))
+      //   {
+      //     if (planNextWaypoint(pt)) // final_goal_=pt inside if success
+      //     {
+      //       ROS_INFO("Current in-collision waypoint (%.3f, %.3f %.3f) has been modified to (%.3f, %.3f %.3f)",
+      //                orig_goal(0), orig_goal(1), orig_goal(2), final_goal_(0), final_goal_(1), final_goal_(2));
+      //       return true;
+      //     }
+      //   }
+
+      //   if (t <= t_step)
+      //   {
+      //     ROS_ERROR("Can't find any collision-free point on global traj.");
+      //   }
+      // }
+      
+      // not global traj, but local traj
+      for (double t = planner_manager_->traj_.local_traj.duration; t > 0; t -= t_step)
       {
-        Eigen::Vector3d pt = planner_manager_->traj_.global_traj.traj.getPos(t);
+        Eigen::Vector3d pt = planner_manager_->traj_.local_traj.traj.getPos(t);
         if (!planner_manager_->grid_map_->getInflateOccupancy(pt))
         {
           if (planNextWaypoint(pt)) // final_goal_=pt inside if success
@@ -617,7 +637,7 @@ namespace ego_planner
 
         if (t <= t_step)
         {
-          ROS_ERROR("Can't find any collision-free point on global traj.");
+          ROS_ERROR("Can't find any collision-free point on local traj.");
         }
       }
     }
