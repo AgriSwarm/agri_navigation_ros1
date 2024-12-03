@@ -1130,9 +1130,9 @@
         bound_msg.pose.orientation.w = q.w();
 
         // バウンディングボックスのサイズを設定
-        bound_msg.dimensions.x = mp_.virtual_wall_x_max_ - mp_.virtual_wall_x_min_ + 2 * mp_.virtual_wall_margin_;
-        bound_msg.dimensions.y = mp_.virtual_wall_y_max_ - mp_.virtual_wall_y_min_ + 2 * mp_.virtual_wall_margin_;
-        bound_msg.dimensions.z = mp_.virtual_wall_z_max_ - mp_.virtual_wall_z_min_ + 2 * mp_.virtual_wall_margin_;
+        bound_msg.dimensions.x = mp_.virtual_wall_x_max_ - mp_.virtual_wall_x_min_ - 2 * mp_.virtual_wall_margin_;
+        bound_msg.dimensions.y = mp_.virtual_wall_y_max_ - mp_.virtual_wall_y_min_ - 2 * mp_.virtual_wall_margin_;
+        bound_msg.dimensions.z = mp_.virtual_wall_z_max_ - mp_.virtual_wall_z_min_ - 2 * mp_.virtual_wall_margin_;
 
         // オプションのパラメータを設定
         bound_msg.value = 1.0; // デフォルト値

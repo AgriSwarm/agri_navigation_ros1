@@ -462,9 +462,9 @@ inline bool GridMap::checkVirtualBound(Eigen::Vector3d pos)
   Eigen::Vector3d rotated_pos = q.inverse() * centered_pos;
 
   // 各軸方向で範囲チェック
-  return (std::abs(rotated_pos.x()) <= box_half_size.x() + mp_.virtual_wall_margin_ &&
-          std::abs(rotated_pos.y()) <= box_half_size.y() + mp_.virtual_wall_margin_ &&
-          std::abs(rotated_pos.z()) <= box_half_size.z() + mp_.virtual_wall_margin_);
+  return (std::abs(rotated_pos.x()) <= box_half_size.x() - mp_.virtual_wall_margin_ &&
+          std::abs(rotated_pos.y()) <= box_half_size.y() - mp_.virtual_wall_margin_ &&
+          std::abs(rotated_pos.z()) <= box_half_size.z() - mp_.virtual_wall_margin_);
 }
 
 inline bool GridMap::isInBuf(const Eigen::Vector3d &pos)
