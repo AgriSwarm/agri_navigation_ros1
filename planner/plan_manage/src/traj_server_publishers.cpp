@@ -156,6 +156,12 @@ bool TrajServer::PureTargetControl(const DroneState &target_state)
     // twist_pub.publish(twist);
     
     bool reached = (pos_error.norm() < ctrl_pos_threshold_) && (std::abs(yaw_error) < ctrl_yaw_threshold_);
+
+    if(reached)
+    {
+        ROS_INFO("[TrajServer::PureTargetControl] Target reached!");
+        updateMode(NavigationMode::POSHOLD);
+    }
     
     return reached;
 }
