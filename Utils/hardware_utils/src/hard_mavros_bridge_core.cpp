@@ -66,18 +66,18 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~"), server_(config_mutex_)
         ROS_ERROR("Failed to initialize GPIO");
         return;
     }
-    
     rotate_motor_srv_ = nh_.advertiseService("rotate_motor", 
             &MavrosBridge::rotateMotorCallback, this);
 
     if (set_params_){
-        setupStreamRate();
+        setupStreamRate(); 
+    }
+    if (debug_mode_)
+    {
         hardware_utils::PIDConfig initial_config = getPIDParam();
         server_.setConfigDefault(initial_config);
         server_.updateConfig(initial_config);
-        
         config_last_ = initial_config;
-
         dynamic_reconfigure::Server<hardware_utils::PIDConfig>::CallbackType f;
         f = boost::bind(&MavrosBridge::configCallback, this, _1, _2);
         server_.setCallback(f);
