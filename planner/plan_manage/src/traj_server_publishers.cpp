@@ -174,7 +174,7 @@ void TrajServer::publishCmd(const DroneState &state)
         return;
     }
     publishMavrosCmd(state);
-    // publishFakeCmd(state);
+    publishFakeCmd(state);
     last_cmd_state_ = state;
     cmd_received_ = true;
 }

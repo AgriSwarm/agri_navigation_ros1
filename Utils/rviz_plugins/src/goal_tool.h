@@ -36,6 +36,7 @@
 # include <ros/ros.h>
 
 # include "pose_tool.h"
+#include <rviz/properties/int_property.h>
 #endif
 
 namespace rviz
@@ -63,6 +64,7 @@ private:
   ros::Publisher pub_goal_, pub_droneID_goal_;
 
   StringProperty* topic_property_;
+  IntProperty* drone_id_property_;
 };
 
 }

@@ -7,6 +7,7 @@ namespace ego_planner
 TrajServer::TrajServer(ros::NodeHandle &nh) : nh_(nh)
 {
     nh_.param("root_tracking_threshold", root_tracking_threshold_, 0.5);
+    nh_.param("root_tracking_yaw_threshold", root_tracking_yaw_threshold_, 0.5);
     nh_.param("update_goal_threshold", update_goal_threshold_, 0.5);
     nh_.param("time_forward", time_forward_, -1.0);
     nh_.param("drone_id", drone_id_, 0);
@@ -29,7 +30,7 @@ TrajServer::TrajServer(ros::NodeHandle &nh) : nh_(nh)
     status_pub_ = nh.advertise<swarm_msgs::SystemStatus>("system_status", 50);
     
     twist_pub = nh.advertise<geometry_msgs::TwistStamped>("/twist_cmd", 50);
-    // fake_pos_cmd_pub_ = nh_.advertise<quadrotor_msgs::PositionCommand>("/position_cmd", 1);
+    fake_pos_cmd_pub_ = nh_.advertise<quadrotor_msgs::PositionCommand>("fake_position_cmd", 1);
     // cf_full_state_cmd_pub_ = nh_.advertise<quadrotor_msgs::FullState>("/cmd_full_state", 1);
     // cf_position_cmd_pub_ = nh_.advertise<quadrotor_msgs::Position>("/cmd_position", 1);
     goal_pub_ = nh_.advertise<quadrotor_msgs::GoalSet>("planning/goal", 1);
@@ -42,6 +43,7 @@ TrajServer::TrajServer(ros::NodeHandle &nh) : nh_(nh)
     target_pose_sub_ = nh_.subscribe("planning/track_pose", 1, &TrajServer::targetPoseCallback, this);
     setpoint_pos_sub_ = nh_.subscribe("planning/setpoint_position", 1, &TrajServer::setpointPosCallback, this);
     conservative_persuit_sub_ = nh_.subscribe("planning/conservative_persuit_goal", 1, &TrajServer::conservativePersuitCallback, this);
+    conservative_escape_sub_ = nh_.subscribe("planning/conservative_escape_goal", 1, &TrajServer::conservativeEscapeCallback, this);
     emergency_stop_sub_ = nh_.subscribe("planning/emergency_stop", 1, &TrajServer::emergencyStopCallback, this);
 
     heartbeat_sub_ = nh_.subscribe("heartbeat", 1, &TrajServer::heartbeatCallback, this);

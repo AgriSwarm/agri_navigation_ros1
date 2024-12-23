@@ -90,8 +90,19 @@ vector<GridNodePtr> AStar::retrievePath(GridNodePtr current)
 
 bool AStar::ConvertToIndexAndAdjustStartEndPoints(Vector3d start_pt, Vector3d end_pt, Vector3i &start_idx, Vector3i &end_idx)
 {
-    if (!Coord2Index(start_pt, start_idx) || !Coord2Index(end_pt, end_idx))
+    // if (!Coord2Index(start_pt, start_idx) || !Coord2Index(end_pt, end_idx))
+    //     return false;
+    
+    if (!Coord2Index(start_pt, start_idx))
+    {
+        ROS_WARN("[Astar] Start point: %f, %f, %f outside the map region.", start_pt(0), start_pt(1), start_pt(2));
         return false;
+    }
+    if (!Coord2Index(end_pt, end_idx))
+    {
+        ROS_WARN("[Astar] End point: %f, %f, %f outside the map region.", end_pt(0), end_pt(1), end_pt(2));
+        return false;
+    }
 
     int occ;
     if (checkOccupancy(Index2Coord(start_idx)))

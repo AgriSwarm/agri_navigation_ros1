@@ -16,6 +16,164 @@ from visualization_msgs.msg import Marker
 from swarm_msgs.msg import CommandTOL, PositionCommand, IndexedOdometry
 import numpy as np
 
+import math
+from geometry_msgs.msg import Pose, Point, Quaternion, Vector3
+from nav_msgs.msg import Odometry
+from visualization_msgs.msg import Marker
+from quadrotor_msgs.msg import TrackingPose, GoalSet
+from scipy.spatial.transform import Rotation as R
+
+
+class DemoManager:
+    def __init__(self, init_odom, drone_id):
+        # パラメータ設定
+        self.dummy_flower_trigger_radius = 5.0
+        self.route_track_trigger_radius = 0.5
+        self.dummy_target_rel_position = [5.0, 5.0, 1.0]
+        euler = [0.0, 1.0, 0.5]
+        self.dummy_target_rel_orientation = R.from_euler('xyz', euler).as_quat()
+        self.tracking_distance = 0.5
+        self.drone_id = drone_id
+
+        self.init_pos = init_odom.pose.pose.position
+        init_ori = init_odom.pose.pose.orientation
+        # 相対位置を加算
+        dummy_x = self.init_pos.x + self.dummy_target_rel_position[0]
+        dummy_y = self.init_pos.y + self.dummy_target_rel_position[1]
+        dummy_z = self.init_pos.z + self.dummy_target_rel_position[2]
+
+        # dummy_targetのPose生成
+        self.dummy_target_pose = Pose()
+        self.dummy_target_pose.position = Point(dummy_x, dummy_y, dummy_z)
+        # Orientationは相対姿勢をそのまま使用（実際にはinit_odomの姿勢と組み合わせが必要な場合もあるが、ここでは簡略化）
+        self.dummy_target_pose.orientation = Quaternion(
+            self.dummy_target_rel_orientation[0],
+            self.dummy_target_rel_orientation[1],
+            self.dummy_target_rel_orientation[2],
+            self.dummy_target_rel_orientation[3]
+        )
+
+        self.goal_pub = rospy.Publisher('/goal_with_id', GoalSet, queue_size=10)
+        self.escape_pub = rospy.Publisher('/escape_with_id', GoalSet, queue_size=10)
+        self.tracking_pose_pub = rospy.Publisher("/traj_server/planning/track_pose", TrackingPose, queue_size=10)
+        self.marker_pub = rospy.Publisher("flower_detection_spheres", Marker, queue_size=10)
+        self.dummy_target_pub = rospy.Publisher("dummy_target_position", PoseStamped, queue_size=10)
+
+        self.publish_markers()
+
+    def publish_goal(self):
+        # dummy_targetをgoalとして設定
+        msg = GoalSet()
+        msg.drone_id = self.drone_id
+        msg.goal = [self.dummy_target_pose.position.x,
+                    self.dummy_target_pose.position.y,
+                    self.dummy_target_pose.position.z]
+        self.goal_pub.publish(msg)
+
+    def publish_escape(self):
+        # dummy_targetをescapeとして設定
+        msg = GoalSet()
+        msg.drone_id = self.drone_id
+        msg.goal = [self.init_pos.x, self.init_pos.y, self.init_pos.z+1.0]
+        self.escape_pub.publish(msg)
+
+    def publish_markers(self):
+        # route_track_trigger_radiusの球
+        route_marker = Marker()
+        route_marker.header.frame_id = "world"
+        route_marker.header.stamp = rospy.Time.now()
+        route_marker.ns = "trigger_spheres"
+        route_marker.id = 0
+        route_marker.type = Marker.SPHERE
+        route_marker.action = Marker.ADD
+        route_marker.pose = self.dummy_target_pose
+        route_marker.scale = Vector3(self.route_track_trigger_radius*2,
+                                     self.route_track_trigger_radius*2,
+                                     self.route_track_trigger_radius*2)
+        route_marker.color.r = 0.0
+        route_marker.color.g = 1.0
+        route_marker.color.b = 0.0
+        route_marker.color.a = 0.1
+
+        # dummy_flower_trigger_radiusの球
+        flower_marker = Marker()
+        flower_marker.header.frame_id = "world"
+        flower_marker.header.stamp = rospy.Time.now()
+        flower_marker.ns = "trigger_spheres"
+        flower_marker.id = 1
+        flower_marker.type = Marker.SPHERE
+        flower_marker.action = Marker.ADD
+        flower_marker.pose = self.dummy_target_pose
+        flower_marker.scale = Vector3(self.dummy_flower_trigger_radius*2,
+                                      self.dummy_flower_trigger_radius*2,
+                                      self.dummy_flower_trigger_radius*2)
+        flower_marker.color.r = 0.0
+        flower_marker.color.g = 1.0
+        flower_marker.color.b = 0.0
+        flower_marker.color.a = 0.1
+
+        self.marker_pub.publish(route_marker)
+        self.marker_pub.publish(flower_marker)
+
+    def noise_process(self):
+        # add noise to self.dummy_target_pose
+        self.dummy_target_pose.position.x += np.random.normal(0, 0.005)
+        self.dummy_target_pose.position.y += np.random.normal(0, 0.005)
+
+        noise_euler = [0.001, 0.001, 0.0]
+        quat_cur = [self.dummy_target_pose.orientation.x,
+                    self.dummy_target_pose.orientation.y,
+                    self.dummy_target_pose.orientation.z,
+                    self.dummy_target_pose.orientation.w]
+        rot_cur = R.from_quat(quat_cur)
+        rot_noise = R.from_euler('xyz', noise_euler)
+        rot_new = rot_cur * rot_noise
+        quat_new = rot_new.as_quat()
+        self.dummy_target_pose.orientation = Quaternion(quat_new[0], quat_new[1], quat_new[2], quat_new[3])
+
+    def process_sequence(self, msg):
+        self.noise_process()
+        # 現在位置を取得
+        current_pos = msg.pose.pose.position
+        target_pos = self.dummy_target_pose.position
+        target_ori = self.dummy_target_pose.orientation
+
+        self.publish_markers()
+
+        # dummy_targetまでの距離を算出
+        dist = math.sqrt((current_pos.x - target_pos.x)**2 + 
+                         (current_pos.y - target_pos.y)**2 + 
+                         (current_pos.z - target_pos.z)**2)
+
+        # dummy_flower_trigger_radius以内に入ったらTrackingPoseとdummy_target_positionをpublish
+        if dist <= self.dummy_flower_trigger_radius:
+            # TrackingPose生成
+            tp = TrackingPose()
+            tp.drone_id = self.drone_id
+            tp.distance = self.tracking_distance
+            tp.center = Vector3(target_pos.x, target_pos.y, target_pos.z)
+            # orientation to normal vector
+            rotation = R.from_quat([target_ori.x, target_ori.y, target_ori.z, target_ori.w])
+            normal = rotation.apply([1, 0, 0])
+            tp.normal = Vector3(normal[0], normal[1], normal[2])
+
+            # print("rotation: ", rotation)
+            # print("TrackingPose: ", tp)
+
+            # 状態設定
+            # ここではTARGET_STATUS_CAPTUREDを想定
+            tp.target_status = TrackingPose.TARGET_STATUS_CAPTURED
+
+            # publish
+            self.tracking_pose_pub.publish(tp)
+
+            # dummy_target_positionをpublish
+            dummy_pos = PoseStamped()
+            dummy_pos.header.frame_id = "world"
+            dummy_pos.header.stamp = rospy.Time.now()
+            dummy_pos.pose = self.dummy_target_pose
+            self.dummy_target_pub.publish(dummy_pos)
+
 class MavrosBridgeClient:
     def __init__(self):
         rospy.init_node('mavros_bridge_client', anonymous=True)
@@ -36,12 +194,19 @@ class MavrosBridgeClient:
             self.odom_sub = rospy.Subscriber('/mavros/local_position/odom', Odometry, self.odom_callback)
             # self.odom_sub = rospy.Subscriber('/d2vins/odometry', Odometry, self.odom_callback)
 
+        self.timer = rospy.Timer(rospy.Duration(0.05), self.timer_callback)
+
         # Variables
         self.position_target = np.zeros(3)
         self.init_pose_pid = False
         self.activated = False
         self.odom_cur = None
         self.mode = 'setpoint_position'
+        self.demo_manager = None
+
+    def timer_callback(self, event):
+        if self.demo_manager is not None and self.odom_cur is not None:
+            self.demo_manager.process_sequence(self.odom_cur)
 
     def lcm_odom_callback(self, msg):
         if msg.drone_id != self.drone_id:
@@ -141,6 +306,11 @@ class MavrosBridgeClient:
         self.target_marker_pub.publish(marker)
 
     def handle_takeoff(self):
+        if self.odom_cur is None:
+            print("No odometry data received yet.")
+            return
+        self.demo_manager = DemoManager(self.odom_cur, self.drone_id)
+
         if self.use_lcm:
             cmd = CommandTOL()
             cmd.drone_id = self.drone_id
@@ -287,6 +457,7 @@ class MavrosBridgeClient:
         
         while True:
             char = self.getch()
+            # rospy.spin_once()
             
             if not self.use_lcm:
                 if char == 'a':
@@ -301,6 +472,18 @@ class MavrosBridgeClient:
                 elif char == 's':
                     result = self.call_shot_service()
                     self.print_status("shot", result)
+                elif char == 'x':
+                    if self.demo_manager is None:
+                        print("DemoManager not initialized yet.")
+                        continue
+                    self.demo_manager.publish_goal()
+                    print("Start Demo Sequence: Publish Approx Goal")
+                elif char == 'e':
+                    if self.demo_manager is None:
+                        print("DemoManager not initialized yet.")
+                        continue
+                    self.demo_manager.publish_escape()
+                    print("Start Demo Sequence: Publish Escape Goal")
 
             if char == 't':
                 self.handle_takeoff()

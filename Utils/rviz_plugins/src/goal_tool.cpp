@@ -51,6 +51,12 @@ Goal3DTool::Goal3DTool()
   // topic_property_droneID_ = new StringProperty("Topic", "goal_with_id",
   //                                              "The topic on which to publish navigation goals.",
   //                                              getPropertyContainer(), SLOT(updateTopic()), this);
+
+  // ドローンID用のプロパティを追加
+  drone_id_property_ = new IntProperty("Drone ID", 0,
+                                     "The ID of the drone to send the goal to.",
+                                     getPropertyContainer());
+  drone_id_property_->setMin(0);
 }
 
 void Goal3DTool::onInitialize()
@@ -81,7 +87,8 @@ void Goal3DTool::onPoseSet(double x, double y, double z, double theta)
   pub_goal_.publish(goal);
 
   quadrotor_msgs::GoalSet goal_with_id;
-  goal_with_id.drone_id = 0;
+  // goal_with_id.drone_id = 0;
+  goal_with_id.drone_id = drone_id_property_->getInt();  // プロパティから値を取得
   goal_with_id.goal[0] = x;
   goal_with_id.goal[1] = y;
   // goal_with_id.goal[2] = z;
