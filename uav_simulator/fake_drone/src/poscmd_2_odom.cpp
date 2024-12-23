@@ -20,7 +20,7 @@ swarm_msgs::SystemStatus status_cur_;
 ros::ServiceServer _takeoff_server, _activate_server;
 
 quadrotor_msgs::PositionCommand _cmd;
-double _init_x, _init_y, _init_z;
+double _init_x, _init_y, _init_z, _init_yaw;
 int _drone_id;
 
 bool rcv_cmd = false;
@@ -54,6 +54,7 @@ bool takeoffCallback(mavros_msgs::CommandTOL::Request &req,
 	_cmd.position.x = _init_x;
 	_cmd.position.y = _init_y;
 	_cmd.position.z = _init_z + req.altitude;
+    _cmd.yaw = _init_yaw;
 	rcv_cmd = true;
 
     res.success = true;
@@ -117,33 +118,37 @@ void pubOdom()
 	}
 	else
 	{
-		odom.pose.pose.position.x = _init_x;
-	    odom.pose.pose.position.y = _init_y;
-	    odom.pose.pose.position.z = _init_z;
+        odom.pose.pose.position.x = _init_x;
+        odom.pose.pose.position.y = _init_y;
+        odom.pose.pose.position.z = _init_z;
 
-	    odom.pose.pose.orientation.w = 1.0;
-	    odom.pose.pose.orientation.x = 0.0;
-	    odom.pose.pose.orientation.y = 0.0;
-	    odom.pose.pose.orientation.z = 0.0;
+        // yawからクォータニオンを計算
+        tf::Quaternion q;
+        q.setRPY(0, 0, _init_yaw);  // Roll=0, Pitch=0, Yaw=_init_yaw
 
-	    odom.twist.twist.linear.x = 0.0;
-	    odom.twist.twist.linear.y = 0.0;
-	    odom.twist.twist.linear.z = 0.0;
+        // クォータニオンをodomにセット
+        odom.pose.pose.orientation.w = q.w();
+        odom.pose.pose.orientation.x = q.x();
+        odom.pose.pose.orientation.y = q.y();
+        odom.pose.pose.orientation.z = q.z();
 
-	    odom.twist.twist.angular.x = 0.0;
-	    odom.twist.twist.angular.y = 0.0;
-	    odom.twist.twist.angular.z = 0.0;
+        odom.twist.twist.linear.x = 0.0;
+        odom.twist.twist.linear.y = 0.0;
+        odom.twist.twist.linear.z = 0.0;
 
-		// tfブロードキャストを追加
+        odom.twist.twist.angular.x = 0.0;
+        odom.twist.twist.angular.y = 0.0;
+        odom.twist.twist.angular.z = 0.0;
+
+        // tfブロードキャストを追加
         tf::Transform transform;
         transform.setOrigin(tf::Vector3(_init_x, _init_y, _init_z));
-        tf::Quaternion q(0, 0, 0, 1);
-        transform.setRotation(q);
-        // br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "base_link"));
-		if(br_ptr != nullptr) {
-			br_ptr->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "base_link"));
-		}
-	}
+        transform.setRotation(q);  // 同じクォータニオンを使用
+        
+        if(br_ptr != nullptr) {
+            br_ptr->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "base_link"));
+        }
+    }
 
     _odom_1_pub.publish(odom);
 	_odom_2_pub.publish(odom);
@@ -268,6 +273,7 @@ int main (int argc, char** argv)
     nh.param("init_x", _init_x,  0.0);
     nh.param("init_y", _init_y,  0.0);
     nh.param("init_z", _init_z,  0.0);
+    nh.param("init_yaw", _init_yaw, 0.0);
 	nh.param("drone_id", _drone_id, 0);
 
     _odom_1_pub = nh.advertise<nav_msgs::Odometry>("odometry_1", 1);               
