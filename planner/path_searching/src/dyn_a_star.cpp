@@ -107,7 +107,7 @@ bool AStar::ConvertToIndexAndAdjustStartEndPoints(Vector3d start_pt, Vector3d en
     int occ;
     if (checkOccupancy(Index2Coord(start_idx)))
     {
-        // ROS_WARN("Start point is insdide an obstacle.");
+        ROS_WARN("Start point is insdide an obstacle.");
         do
         {
             start_pt = (start_pt - end_pt).normalized() * step_size_ + start_pt;
@@ -128,7 +128,7 @@ bool AStar::ConvertToIndexAndAdjustStartEndPoints(Vector3d start_pt, Vector3d en
 
     if (checkOccupancy(Index2Coord(end_idx)))
     {
-        // ROS_WARN("End point is insdide an obstacle.");
+        ROS_WARN("End point is insdide an obstacle.");
         do
         {
             end_pt = (end_pt - start_pt).normalized() * step_size_ + end_pt;
