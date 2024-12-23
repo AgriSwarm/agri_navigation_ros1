@@ -4,6 +4,25 @@ using std::cout;
 using std::endl;
 namespace ego_planner
 {
+  std::vector<Eigen::Vector3d> PlanningVisualization::drone_colors{
+    Eigen::Vector3d(0.93, 0.63, 0.05), //drone 0 yellow
+    Eigen::Vector3d(0.46, 0.35, 0.6), //drone 1 purple
+    Eigen::Vector3d(0.80, 0, 0.07), //drone 2 red
+    Eigen::Vector3d(0, 0, 1), //drone 3 blue
+    Eigen::Vector3d(0, 1, 1), //drone 4 cyan
+    Eigen::Vector3d(1, 0, 1), //drone 5 magenta
+    Eigen::Vector3d(1, 1, 1), //drone 6 white
+    Eigen::Vector3d(0, 0, 0), //drone 7 black
+    Eigen::Vector3d(0.5, 0.5, 0.5), //drone 8 gray
+    Eigen::Vector3d(0.5, 0, 0), //drone 9 orange
+    Eigen::Vector3d(0, 0.5, 0), //drone 10 green
+    Eigen::Vector3d(0.1, 0.1, 0.5), //drone 11 blue
+    Eigen::Vector3d(0.5, 0, 0.5), //drone 12 purple
+    Eigen::Vector3d(0.5, 0.5, 0), //drone 13 orange
+    Eigen::Vector3d(0, 0.5, 0.5), //drone 14 cyan
+    Eigen::Vector3d(0.5, 0.5, 0.5) //drone 15 white
+  };
+
   PlanningVisualization::PlanningVisualization(ros::NodeHandle &nh)
   {
     node = nh;
@@ -261,7 +280,7 @@ namespace ego_planner
       Eigen::Vector3d pt = optimal_pts.col(i).transpose();
       list.push_back(pt);
     }
-    Eigen::Vector4d color(1, 0, 0, 1);
+    Eigen::Vector4d color(drone_colors[drone_id](0), drone_colors[drone_id](1), drone_colors[drone_id](2), 1);
     displayMarkerList(swarm_list_pub[drone_id], list, 0.15, color, id);
   }
 

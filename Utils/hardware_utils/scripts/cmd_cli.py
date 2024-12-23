@@ -22,25 +22,61 @@ from nav_msgs.msg import Odometry
 from visualization_msgs.msg import Marker
 from quadrotor_msgs.msg import TrackingPose, GoalSet
 from scipy.spatial.transform import Rotation as R
+from tf.transformations import quaternion_matrix, quaternion_multiply
 
+from jsk_recognition_msgs.msg import PolygonArray
+from geometry_msgs.msg import Polygon, PolygonStamped, Point32
 
 class DemoManager:
     def __init__(self, init_odom, drone_id):
         # パラメータ設定
-        self.dummy_flower_trigger_radius = 5.0
+        self.dummy_flower_trigger_radius = 3.0
         self.route_track_trigger_radius = 0.5
-        self.dummy_target_rel_position = [5.0, 5.0, 1.0]
+        self.dummy_target_rel_position = [0.0, 5.0, 1.0]
         euler = [0.0, 1.0, 0.5]
         self.dummy_target_rel_orientation = R.from_euler('xyz', euler).as_quat()
         self.tracking_distance = 0.5
         self.drone_id = drone_id
+        self.initialized = False
 
-        self.init_pos = init_odom.pose.pose.position
-        init_ori = init_odom.pose.pose.orientation
-        # 相対位置を加算
-        dummy_x = self.init_pos.x + self.dummy_target_rel_position[0]
-        dummy_y = self.init_pos.y + self.dummy_target_rel_position[1]
-        dummy_z = self.init_pos.z + self.dummy_target_rel_position[2]
+        self.goal_pub = rospy.Publisher('/goal_with_id', GoalSet, queue_size=10)
+        self.escape_pub = rospy.Publisher('/escape_with_id', GoalSet, queue_size=10)
+        self.tracking_pose_pub = rospy.Publisher("/traj_server/planning/track_pose", TrackingPose, queue_size=10)
+        self.marker_pub = rospy.Publisher("flower_detection_spheres", Marker, queue_size=10)
+        self.dummy_target_pub = rospy.Publisher("dummy_target_position", PoseStamped, queue_size=10)
+        self.structure_polygon_pub = rospy.Publisher("structure_polygon", PolygonStamped, queue_size=10)
+
+        self.transform_by_odom(init_odom)
+
+        self.publish_markers()
+    
+    def fix_target(self, odom):
+        self.initialized = True
+        self.transform_by_odom(odom)
+
+    def transform_by_odom(self, odom):
+        if self.initialized:
+            return
+        self.init_pos = odom.pose.pose.position
+        self.init_ori = odom.pose.pose.orientation
+
+        # 初期姿勢のクォータニオンから回転行列を作成
+        rot_matrix = quaternion_matrix([self.init_ori.x, self.init_ori.y, self.init_ori.z, self.init_ori.w])
+
+        # 相対位置ベクトルを回転させる
+        rel_pos_vec = [self.dummy_target_rel_position[0],
+                      self.dummy_target_rel_position[1],
+                      self.dummy_target_rel_position[2],
+                      1.0]  # 同次座標として1を追加
+        
+        # 回転行列をかけて変換
+        transformed_pos = rot_matrix.dot(rel_pos_vec)
+        # transformed_pos = rel_pos_vec
+
+        # 変換後の位置を初期位置に加算
+        dummy_x = self.init_pos.x + transformed_pos[0]
+        dummy_y = self.init_pos.y + transformed_pos[1]
+        dummy_z = self.init_pos.z + transformed_pos[2]
 
         # dummy_targetのPose生成
         self.dummy_target_pose = Pose()
@@ -52,12 +88,6 @@ class DemoManager:
             self.dummy_target_rel_orientation[2],
             self.dummy_target_rel_orientation[3]
         )
-
-        self.goal_pub = rospy.Publisher('/goal_with_id', GoalSet, queue_size=10)
-        self.escape_pub = rospy.Publisher('/escape_with_id', GoalSet, queue_size=10)
-        self.tracking_pose_pub = rospy.Publisher("/traj_server/planning/track_pose", TrackingPose, queue_size=10)
-        self.marker_pub = rospy.Publisher("flower_detection_spheres", Marker, queue_size=10)
-        self.dummy_target_pub = rospy.Publisher("dummy_target_position", PoseStamped, queue_size=10)
 
         self.publish_markers()
 
@@ -112,6 +142,17 @@ class DemoManager:
         flower_marker.color.b = 0.0
         flower_marker.color.a = 0.1
 
+        structure_polygon = PolygonStamped()
+        structure_polygon.header.frame_id = "world"
+        structure_polygon.header.stamp = rospy.Time.now()
+        structure_polygon.polygon = Polygon()
+        structure_polygon.polygon.points = [
+            Point32(x=self.init_pos.x, y=self.init_pos.y, z=self.init_pos.z),
+            Point32(x=self.init_pos.x, y=self.init_pos.y, z=self.init_pos.z+1.0),
+            Point32(x=self.dummy_target_pose.position.x, y=self.dummy_target_pose.position.y, z=self.dummy_target_pose.position.z),
+        ]
+
+        self.structure_polygon_pub.publish(structure_polygon)
         self.marker_pub.publish(route_marker)
         self.marker_pub.publish(flower_marker)
 
@@ -132,6 +173,9 @@ class DemoManager:
         self.dummy_target_pose.orientation = Quaternion(quat_new[0], quat_new[1], quat_new[2], quat_new[3])
 
     def process_sequence(self, msg):
+        if self.dummy_target_pose is None:
+            print("Dummy target not initialized yet.")
+            return
         self.noise_process()
         # 現在位置を取得
         current_pos = msg.pose.pose.position
@@ -179,6 +223,14 @@ class MavrosBridgeClient:
         rospy.init_node('mavros_bridge_client', anonymous=True)
         self.drone_id = rospy.get_param('~self_id', 0)
         self.use_lcm = rospy.get_param('~use_lcm', False)
+
+        # Variables
+        self.position_target = np.zeros(3)
+        self.init_pose_pid = False
+        self.activated = False
+        self.odom_cur = Odometry()
+        self.mode = 'setpoint_position'
+        self.demo_manager = DemoManager(self.odom_cur, self.drone_id)
         
         # Publishers
         self.setpoint_position_pub = rospy.Publisher('/traj_server/planning/setpoint_position', PositionCommand, queue_size=1)
@@ -196,14 +248,6 @@ class MavrosBridgeClient:
 
         self.timer = rospy.Timer(rospy.Duration(0.05), self.timer_callback)
 
-        # Variables
-        self.position_target = np.zeros(3)
-        self.init_pose_pid = False
-        self.activated = False
-        self.odom_cur = None
-        self.mode = 'setpoint_position'
-        self.demo_manager = None
-
     def timer_callback(self, event):
         if self.demo_manager is not None and self.odom_cur is not None:
             self.demo_manager.process_sequence(self.odom_cur)
@@ -215,6 +259,7 @@ class MavrosBridgeClient:
 
     def odom_callback(self, msg):
         self.odom_cur = msg
+        self.demo_manager.transform_by_odom(msg)
 
     def publish_setpoint(self, dx=0.0, dy=0.0, dz=0.0):
         if self.odom_cur is None:
@@ -309,7 +354,7 @@ class MavrosBridgeClient:
         if self.odom_cur is None:
             print("No odometry data received yet.")
             return
-        self.demo_manager = DemoManager(self.odom_cur, self.drone_id)
+        self.demo_manager.fix_target(self.odom_cur)
 
         if self.use_lcm:
             cmd = CommandTOL()

@@ -214,6 +214,7 @@ namespace ego_planner
       setLocalTrajFromOpt(best_MJO, touch_goal);
       cstr_pts = best_MJO.getInitConstraintPoints(ploy_traj_opt_->get_cps_num_prePiece_());
       visualization_->displayOptimalList(cstr_pts, 0);
+      visualization_->displaySwarmList(cstr_pts, 0, pp_.drone_id);
 
       continous_failures_count_ = 0;
     }

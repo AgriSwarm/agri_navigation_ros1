@@ -26,6 +26,7 @@ namespace ego_planner
     ros::Publisher a_star_list_pub;
     ros::Publisher guide_vector_pub;
     std::vector<ros::Publisher> swarm_list_pub;
+    static std::vector<Eigen::Vector3d> drone_colors;
 
     ros::Publisher intermediate_pt0_pub;
     ros::Publisher intermediate_pt1_pub;
