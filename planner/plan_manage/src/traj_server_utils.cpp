@@ -16,13 +16,32 @@ void TrajServer::resetTraj()
 void TrajServer::executeRootTracking(DroneState target_state)
 {
     // TODO: implement pose diff evaluation
-    Eigen::Vector3d diff = target_state.pos - last_tracking_goal_.pos;
-    if(diff.norm() > update_tracking_goal_threshold_ || first_root_tracking_)
-    {
-        publishGoal(target_state.pos);
-        last_tracking_goal_ = target_state;
-        first_root_tracking_ = false;
-    }
+    // Eigen::Vector3d diff;
+    // if (tracking_state_.initialized)
+    // {
+    //     diff = target_state.pos - tracking_state_.pos;
+
+    //     std::cout << "target_state.pos: " << target_state.pos(0) << ", " << target_state.pos(1) << ", " << target_state.pos(2) << std::endl;
+    //     std::cout << "tracking_state_.pos: " << tracking_state_.pos(0) << ", " << tracking_state_.pos(1) << ", " << tracking_state_.pos(2) << std::endl;
+    // }else{
+    //     diff = target_state.pos - last_tracking_goal_.pos;
+
+    //     std::cout << "target_state.pos: " << target_state.pos(0) << ", " << target_state.pos(1) << ", " << target_state.pos(2) << std::endl;
+    //     std::cout << "last_tracking_goal_.pos: " << last_tracking_goal_.pos(0) << ", " << last_tracking_goal_.pos(1) << ", " << last_tracking_goal_.pos(2) << std::endl;
+    // }
+
+    // diff = target_state.pos - last_tracking_goal_.pos;
+
+    // if(diff.norm() > update_tracking_goal_threshold_ || first_root_tracking_)
+    // {
+    //     publishGoal(target_state.pos);
+    //     last_tracking_goal_ = target_state;
+    //     first_root_tracking_ = false;
+    // }
+
+    publishGoal(target_state.pos);
+    last_tracking_goal_ = target_state;
+    first_root_tracking_ = false;
 }
 
 void TrajServer::updateMode(NavigationMode mode)
@@ -51,12 +70,15 @@ DroneState TrajServer::computeTrackingState(const quadrotor_msgs::TrackingPose::
     target_pose_.normal << normal.x, normal.y, normal.z;
 
     double theta = atan2(normal.y, normal.x);
+    // std::cout << "theta: " << theta << std::endl;
+    // std::cout << "normal: " << normal.x << ", " << normal.y << ", " << normal.z << std::endl;
     double yaw = theta + M_PI;
     state.pos(0) = center.x + distance * cos(theta);
     state.pos(1) = center.y + distance * sin(theta);
     state.pos(2) = center.z;
     state.yaw = yaw;
     state.only_pose = true;
+    state.initialized = true;
 
     return state;
 }
@@ -77,9 +99,9 @@ void TrajServer::visualizeTarget(const Eigen::Vector3d &pos)
     marker.pose.orientation.y = 0.0;
     marker.pose.orientation.z = 0.0;
     marker.pose.orientation.w = 1.0;
-    marker.scale.x = 0.05;
-    marker.scale.y = 0.05;
-    marker.scale.z = 0.05;
+    marker.scale.x = root_tracking_threshold_;
+    marker.scale.y = root_tracking_threshold_;
+    marker.scale.z = root_tracking_threshold_;
     marker.color.a = 0.6;
     marker.color.r = 0.0;
     marker.color.g = 1.0;
@@ -106,12 +128,6 @@ std::pair<double, double> TrajServer::calculate_yaw(double t_cur, NavigationMode
         yaw = atan2(y, x);
         yaw_rate = 0.0;
     }else{
-        // if (t_cur < traj_duration_ && t_cur >= 0.0)
-        // {
-        //     Eigen::Vector3d vel = traj_->getVel(t_cur);
-        //     yaw = atan2(vel(1), vel(0));
-        //     yaw_rate = 0.0;
-        // }
         Eigen::Vector3d dir;
         if (t_cur + time_forward_ <= traj_duration_)
         {

@@ -6,6 +6,8 @@ uint8 ROOT_TRACK = 3
 uint8 PURE_TRACK = 4
 uint8 HOVER = 5
 uint8 POSHOLD = 6
+uint8 TURN_FOR_PERSUIT = 7
+uint8 TURN_FOR_ESCAPE = 8
 uint8 mode
 
 ---

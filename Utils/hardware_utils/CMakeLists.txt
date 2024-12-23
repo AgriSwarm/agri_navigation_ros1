@@ -76,5 +76,6 @@ catkin_install_python(PROGRAMS
   scripts/external_nav_test.py
   scripts/cmd_cli.py
   scripts/gps_spy.py
+  scripts/demo_manager.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

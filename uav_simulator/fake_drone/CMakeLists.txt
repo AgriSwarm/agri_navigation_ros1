@@ -12,6 +12,9 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   nav_msgs
   quadrotor_msgs
+  swarm_msgs
+  mavros_msgs
+  tf
 )
 find_package(Eigen3 REQUIRED)
 

@@ -35,6 +35,14 @@ bool TrajServer::updateModeCallback(quadrotor_msgs::UpdateMode::Request& req,
     {
         updateMode(NavigationMode::POSHOLD);
     }
+    else if (req.mode == quadrotor_msgs::UpdateMode::Request::TURN_FOR_PERSUIT)
+    {
+        updateMode(NavigationMode::TURN_FOR_PERSUIT);
+    }
+    else if (req.mode == quadrotor_msgs::UpdateMode::Request::TURN_FOR_ESCAPE)
+    {
+        updateMode(NavigationMode::TURN_FOR_ESCAPE);
+    }
     else
     {
         ROS_ERROR("[traj_server] Unrecognized mode!");
@@ -92,6 +100,27 @@ void TrajServer::conservativePersuitCallback(const quadrotor_msgs::GoalSet::Cons
     updateMode(NavigationMode::TURN_FOR_PERSUIT);
 }
 
+void TrajServer::conservativeEscapeCallback(const quadrotor_msgs::GoalSet::ConstPtr &msg)
+{
+    if (msg->drone_id != drone_id_)
+    {
+        return;
+    }
+    escape_mode_ = true;
+    float escape_distance = 0.3;
+    reserved_goal_ = Eigen::Vector3d(msg->goal[0], msg->goal[1], msg->goal[2]);
+    // calculate backword from yaw
+    Eigen::Vector3d backword = Eigen::Vector3d(-cos(odom_state_.yaw)*escape_distance+odom_state_.pos(0), -sin(odom_state_.yaw)*escape_distance+odom_state_.pos(1), odom_state_.pos(2));
+
+    Eigen::Vector3d diff = reserved_goal_ - odom_state_.pos;
+    
+    pursuit_state_.pos << backword(0), backword(1), backword(2);
+    double yaw = atan2(diff(1), diff(0));
+    pursuit_state_.yaw = yaw;
+    pursuit_state_.only_pose = true;
+    updateMode(NavigationMode::TURN_FOR_ESCAPE);
+}
+
 void TrajServer::polyTrajCallback(const traj_utils::PolyTraj::ConstPtr &msg)
 {
     if (msg->order != 5)
@@ -130,7 +159,11 @@ void TrajServer::polyTrajCallback(const traj_utils::PolyTraj::ConstPtr &msg)
     // if (mode_ == NavigationMode::IDLE){
     //     updateMode(NavigationMode::SEARCH);
     // }
-    updateMode(NavigationMode::SEARCH);
+
+    if (mode_ != NavigationMode::APPROACH && mode_ != NavigationMode::ROOT_TRACK && mode_ != NavigationMode::PURE_TRACK)
+    {
+        updateMode(NavigationMode::SEARCH);
+    }
 }
 
 void TrajServer::setpointPosCallback(const swarm_msgs::PositionCommand::ConstPtr &msg)
@@ -149,6 +182,10 @@ void TrajServer::setpointPosCallback(const swarm_msgs::PositionCommand::ConstPtr
 
 void TrajServer::targetPoseCallback(const quadrotor_msgs::TrackingPose::ConstPtr &msg)
 {
+    if (msg->drone_id != drone_id_ || escape_mode_)
+    {
+        return;
+    }
     if(msg->target_status == quadrotor_msgs::TrackingPose::TARGET_STATUS_APPROXIMATE)
     {
         Eigen::Vector3d goal_pos = Eigen::Vector3d(msg->center.x, msg->center.y, msg->center.z);
@@ -165,9 +202,16 @@ void TrajServer::targetPoseCallback(const quadrotor_msgs::TrackingPose::ConstPtr
     {
         tracking_state_ = computeTrackingState(msg);
         visualizeTarget(tracking_state_.pos);
-        Eigen::Vector3d diff = tracking_state_.pos - last_cmd_state_.pos;
-        // ROS_INFO("[traj_server] diff: %f", diff.norm());
-        if(diff.norm() > root_tracking_threshold_)
+        Eigen::Vector3d pos_diff = tracking_state_.pos - odom_state_.pos;
+        double yaw_diff = fabs(tracking_state_.yaw - odom_state_.yaw);
+        while(yaw_diff > 2 * M_PI)
+        {
+            yaw_diff -= 2 * M_PI;
+        }
+        // std::cout << "tracking_state_.yaw: " << tracking_state_.yaw << ", odom_state_.yaw: " << odom_state_.yaw << std::endl;
+        // std::cout << "odom_state_.yaw: " << odom_state_.yaw << std::endl;
+
+        if((pos_diff.norm() > root_tracking_threshold_) || (yaw_diff > root_tracking_yaw_threshold_))
         {
             updateMode(NavigationMode::ROOT_TRACK);
             executeRootTracking(tracking_state_);
@@ -237,7 +281,7 @@ void TrajServer::cmdTimerCallback(const ros::TimerEvent &event)
     {
         publishPinCmd();
     }
-    else if(mode_ == NavigationMode::TURN_FOR_PERSUIT)
+    else if(mode_ == NavigationMode::TURN_FOR_PERSUIT || mode_ == NavigationMode::TURN_FOR_ESCAPE)
     {
         if(PureTargetControl(pursuit_state_))
         {
