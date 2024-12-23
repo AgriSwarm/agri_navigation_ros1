@@ -6,8 +6,10 @@ output_pins = {
     'JETSON_XAVIER': 18,
     'JETSON_NANO': 33,
     'JETSON_NX': 33,
+    'JETSON_ORIN_NX': 33,
 }
 
+print(GPIO.model)
 output_pin = output_pins.get(GPIO.model, None)
 if output_pin is None:
     raise Exception('PWM not supported on this board')

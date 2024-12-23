@@ -10,7 +10,7 @@ def control_motor(duration, pin=32):
         GPIO.setup(pin, GPIO.OUT)
         
         pwm = GPIO.PWM(pin, 50)
-        pwm.start(80)
+        pwm.start(40)
         
         time.sleep(float(duration))
         
