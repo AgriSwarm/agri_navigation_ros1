@@ -434,7 +434,7 @@ class MavrosBridgeClient:
             return False
 
     def call_shot_service(self):
-        service_name = 'rotate_motor'
+        service_name = '/hardware_bridge/rotate_motor'
         try:
             rospy.wait_for_service(service_name, timeout=5.0)
         except rospy.ROSException:

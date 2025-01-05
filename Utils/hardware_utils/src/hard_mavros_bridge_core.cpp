@@ -66,7 +66,7 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~"), server_(config_mutex_)
         ROS_ERROR("Failed to initialize GPIO");
         return;
     }
-    rotate_motor_srv_ = nh_.advertiseService("rotate_motor", 
+    rotate_motor_srv_ = nh_.advertiseService("/hardware_bridge/rotate_motor", 
             &MavrosBridge::rotateMotorCallback, this);
 
     if (set_params_){
