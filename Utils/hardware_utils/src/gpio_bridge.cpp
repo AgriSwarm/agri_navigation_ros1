@@ -48,12 +48,21 @@ bool MavrosBridge::rotateMotorCallback(hardware_utils::RotateMotor::Request& req
     //     return false;
     // }
 
+    // バッテリー電圧に応じてモーターの回転速度を調整
+    float rated_voltage = 5.0;
+    if (batt_voltage_ <= rated_voltage) {
+        ROS_ERROR("Battery voltage is not available");
+        res.success = false;
+        return false;
+    }
+    float duty_cycle = rated_voltage / batt_voltage_ * 100;
+
     try {
         // Pythonスクリプトのパスを指定
         std::string script_path = ros::package::getPath("hardware_utils") + "/scripts/motor_control.py";
         
         // コマンドを構築
-        std::string command = "python3 " + script_path + " " + std::to_string(req.duration);
+        std::string command = "python3 " + script_path + " " + std::to_string(req.duration) + " " + std::to_string(duty_cycle);
         
         // Pythonスクリプトを実行
         int result = system(command.c_str());

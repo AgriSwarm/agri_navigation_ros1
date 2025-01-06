@@ -3,14 +3,14 @@ import Jetson.GPIO as GPIO
 import time
 import sys
 
-def control_motor(duration, pin=32):
+def control_motor(duration, duty_cycle, pin=32):
     try:
         GPIO.setmode(GPIO.BOARD)
         GPIO.setwarnings(False)
         GPIO.setup(pin, GPIO.OUT)
         
         pwm = GPIO.PWM(pin, 50)
-        pwm.start(30)
+        pwm.start(duty_cycle)
         
         time.sleep(float(duration))
         
@@ -23,5 +23,5 @@ def control_motor(duration, pin=32):
         return False
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        control_motor(float(sys.argv[1]))
+    if len(sys.argv) > 2:
+        control_motor(float(sys.argv[1]), float(sys.argv[2]))

@@ -181,16 +181,16 @@ void MavrosBridge::pictStateTimerCallback(const ros::TimerEvent&)
 
 void MavrosBridge::batteryCallback(sensor_msgs::BatteryState msg)
 {
-    float voltage = msg.voltage;
+    batt_voltage_ = msg.voltage;
     float min_voltage = 3.4 * cells_batt_;
     float max_voltage = 4.2 * cells_batt_;
-    if (voltage < min_voltage){
-        voltage = min_voltage;
+    if (batt_voltage_ < min_voltage){
+        batt_voltage_ = min_voltage;
     }
-    if (voltage > max_voltage){
-        voltage = max_voltage;
+    if (batt_voltage_ > max_voltage){
+        batt_voltage_ = max_voltage;
     }
-    int battery = (voltage - min_voltage) / (max_voltage - min_voltage) * 100;
+    int battery = (batt_voltage_ - min_voltage) / (max_voltage - min_voltage) * 100;
     std_msgs::Float32 battery_msg;
     battery_msg.data = battery;
     battery_pub_.publish(battery_msg);

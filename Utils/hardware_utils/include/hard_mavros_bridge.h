@@ -165,6 +165,7 @@ private:
     int infra_freq_{ 0 };
     int self_id{ 0 };
     float vio_align_interval_{ 1.0 };
+    float batt_voltage_{ 0.0 };
 
     static const int OUTPUT_PIN = 32;
     ros::ServiceServer rotate_motor_srv_;
