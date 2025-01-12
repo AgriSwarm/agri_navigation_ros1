@@ -110,7 +110,10 @@ void TrajServer::conservativeEscapeCallback(const quadrotor_msgs::GoalSet::Const
     float escape_distance = 0.3;
     reserved_goal_ = Eigen::Vector3d(msg->goal[0], msg->goal[1], msg->goal[2]);
     // calculate backword from yaw
-    Eigen::Vector3d backword = Eigen::Vector3d(-cos(odom_state_.yaw)*escape_distance+odom_state_.pos(0), -sin(odom_state_.yaw)*escape_distance+odom_state_.pos(1), odom_state_.pos(2));
+    Eigen::Vector3d backword = Eigen::Vector3d(
+        -cos(odom_state_.yaw)*escape_distance+odom_state_.pos(0), 
+        -sin(odom_state_.yaw)*escape_distance+odom_state_.pos(1), 
+        odom_state_.pos(2));
 
     Eigen::Vector3d diff = reserved_goal_ - odom_state_.pos;
     

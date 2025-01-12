@@ -32,7 +32,7 @@ class DemoManager:
         # パラメータ設定
         self.dummy_flower_trigger_radius = 3.0
         self.route_track_trigger_radius = 0.5
-        self.dummy_target_rel_position = [0.0, 5.0, 1.0]
+        self.dummy_target_rel_position = [5.0, 5.0, 1.0]
         euler = [0.0, 1.0, 0.5]
         self.dummy_target_rel_orientation = R.from_euler('xyz', euler).as_quat()
         self.tracking_distance = 0.5
