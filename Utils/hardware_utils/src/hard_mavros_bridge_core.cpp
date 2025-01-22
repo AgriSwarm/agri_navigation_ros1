@@ -22,6 +22,7 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~"), server_(config_mutex_)
     setpoint_pos_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("/mavros/setpoint_position/local", 10);
     setpoint_raw_pub_ = nh_.advertise<mavros_msgs::PositionTarget>("/mavros/setpoint_raw/local", 10);
     pict_state_pub_ = nh_.advertise<jsk_rviz_plugins::PictogramArray>("/hardware_bridge/system_status_pict", 10);
+    debug_text_pub_ = nh_.advertise<jsk_rviz_plugins::OverlayText>("/hardware_bridge/system_status_text", 10);
     update_mode_client_ = nh_.serviceClient<quadrotor_msgs::UpdateMode>("/traj_server/update_mode");
 
     pub_temp0_ = nh_.advertise<std_msgs::Float32>("/hardware_bridge/cpu_temperature", 1);

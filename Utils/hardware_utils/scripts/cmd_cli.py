@@ -6,6 +6,7 @@ import sys
 import termios
 import tty
 from functools import partial
+from std_msgs.msg import Empty
 from mavros_msgs.srv import CommandTOL as CommandTOLSrv
 from quadrotor_msgs.msg import GoalSet
 from quadrotor_msgs.srv import UpdateMode, UpdateModeRequest
@@ -30,9 +31,9 @@ from geometry_msgs.msg import Polygon, PolygonStamped, Point32
 class DemoManager:
     def __init__(self, init_odom, drone_id):
         # パラメータ設定
-        self.dummy_flower_trigger_radius = 3.0
+        self.dummy_flower_trigger_radius = 1.5
         self.route_track_trigger_radius = 0.5
-        self.dummy_target_rel_position = [5.0, 5.0, 1.0]
+        self.dummy_target_rel_position = [5.0, 0.0, 1.0]
         euler = [0.0, 1.0, 0.5]
         self.dummy_target_rel_orientation = R.from_euler('xyz', euler).as_quat()
         self.tracking_distance = 0.5
@@ -42,16 +43,17 @@ class DemoManager:
         self.goal_pub = rospy.Publisher('/goal_with_id', GoalSet, queue_size=10)
         self.escape_pub = rospy.Publisher('/escape_with_id', GoalSet, queue_size=10)
         self.tracking_pose_pub = rospy.Publisher("/traj_server/planning/track_pose", TrackingPose, queue_size=10)
-        self.marker_pub = rospy.Publisher("flower_detection_spheres", Marker, queue_size=10)
-        self.dummy_target_pub = rospy.Publisher("dummy_target_position", PoseStamped, queue_size=10)
-        self.structure_polygon_pub = rospy.Publisher("structure_polygon", PolygonStamped, queue_size=10)
+        self.marker_pub = rospy.Publisher("/cmd_gcs/flower_detection_spheres", Marker, queue_size=10)
+        self.dummy_target_pub = rospy.Publisher("/cmd_gcs/dummy_target_position", PoseStamped, queue_size=10)
+        self.structure_polygon_pub = rospy.Publisher("/cmd_gcs/structure_polygon", PolygonStamped, queue_size=10)
+        self.mand_start_pub = rospy.Publisher('/mandatory_start_to_planner', Empty, queue_size=10)
 
         self.transform_by_odom(init_odom)
 
         self.publish_markers()
     
-    def fix_target(self, odom):
-        self.initialized = True
+    def fix_target(self, odom, flag=True):
+        self.initialized = flag
         self.transform_by_odom(odom)
 
     def transform_by_odom(self, odom):
@@ -93,6 +95,7 @@ class DemoManager:
 
     def publish_goal(self):
         # dummy_targetをgoalとして設定
+        self.mand_start_pub.publish(Empty())
         msg = GoalSet()
         msg.drone_id = self.drone_id
         msg.goal = [self.dummy_target_pose.position.x,
@@ -102,6 +105,7 @@ class DemoManager:
 
     def publish_escape(self):
         # dummy_targetをescapeとして設定
+        self.mand_start_pub.publish(Empty())
         msg = GoalSet()
         msg.drone_id = self.drone_id
         msg.goal = [self.init_pos.x, self.init_pos.y, self.init_pos.z+1.0]
@@ -228,6 +232,7 @@ class MavrosBridgeClient:
         self.position_target = np.zeros(3)
         self.init_pose_pid = False
         self.activated = False
+        self.mandatory_stop = False
         self.odom_cur = Odometry()
         self.mode = 'setpoint_position'
         self.demo_manager = DemoManager(self.odom_cur, self.drone_id)
@@ -237,6 +242,7 @@ class MavrosBridgeClient:
         # self.setpoint_position_pub = rospy.Publisher('/mavros/setpoint_position/local', PoseStamped, queue_size=1)
         self.target_marker_pub = rospy.Publisher('/cmd_gcs/setpoint_position_marker', Marker, queue_size=10)
         self.goal_pub = rospy.Publisher('/goal_with_id', GoalSet, queue_size=10)
+        self.mand_stop_pub = rospy.Publisher('/mandatory_stop_to_planner', Empty, queue_size=10)
 
         if self.use_lcm:
             self.takeoff_command_pub = rospy.Publisher('/hardware_bridge/takeoff_mand', CommandTOL, queue_size=1)
@@ -249,6 +255,8 @@ class MavrosBridgeClient:
         self.timer = rospy.Timer(rospy.Duration(0.05), self.timer_callback)
 
     def timer_callback(self, event):
+        if self.mandatory_stop:
+            return
         if self.demo_manager is not None and self.odom_cur is not None:
             self.demo_manager.process_sequence(self.odom_cur)
 
@@ -265,9 +273,10 @@ class MavrosBridgeClient:
         if self.odom_cur is None:
             print("No odometry data received yet.")
             return
-        # if not self.activated and not self.use_lcm:
-        #     print("Drone not activated yet.")
-        #     return
+
+        self.mand_stop_pub.publish(Empty())
+        self.mandatory_stop = True
+
         if not self.init_pose_pid:
             if self.use_lcm:
                 self.position_target = np.array([
@@ -283,37 +292,59 @@ class MavrosBridgeClient:
                 ])
             self.init_pose_pid = True
 
-        # Update target position
-        self.position_target += np.array([dx, dy, dz])
+        # ---------------------------
+        # ローカル座標系 → ワールド座標系 変換
+        # ---------------------------
+        if self.use_lcm:
+            orientation = self.odom_cur.odom.pose.pose.orientation
+        else:
+            orientation = self.odom_cur.pose.pose.orientation
 
+        q = np.array([orientation.x,
+                    orientation.y,
+                    orientation.z,
+                    orientation.w])
+
+        # 回転行列
+        rot_mat = quaternion_matrix(q)[0:3, 0:3]
+
+        # ローカル → ワールドへの並進ベクトル変換
+        local_offset = np.array([dx, dy, dz])
+        world_offset = rot_mat.dot(local_offset)
+
+        # ターゲット位置の更新
+        self.position_target += world_offset
+
+        # ---------------------------
+        # 姿勢を「現在の機体姿勢を維持」する場合
+        # ---------------------------
+        # そのまま orientation をコピー
+        new_orientation = orientation
+
+        # コマンド生成
         if self.mode == 'setpoint_position':
             cmd = PositionCommand()
             cmd.header.stamp = rospy.Time.now()
             cmd.header.frame_id = "world"
             cmd.drone_id = self.drone_id
+
             cmd.pose.position.x = self.position_target[0]
             cmd.pose.position.y = self.position_target[1]
             cmd.pose.position.z = self.position_target[2]
-            cmd.pose.orientation.w = 1.0
+
+            # ★ ここで機体の姿勢をそのまま反映
+            cmd.pose.orientation.x = new_orientation.x
+            cmd.pose.orientation.y = new_orientation.y
+            cmd.pose.orientation.z = new_orientation.z
+            cmd.pose.orientation.w = new_orientation.w
+
             self.setpoint_position_pub.publish(cmd)
-            print("Published setpoint: x=%.2f, y=%.2f, z=%.2f" % (
-                self.position_target[0], 
-                self.position_target[1], 
-                self.position_target[2]
-            ))
-            # cmd = PoseStamped()
-            # cmd.header.stamp = rospy.Time.now()
-            # cmd.header.frame_id = "world"
-            # cmd.pose.position.x = self.position_target[0]
-            # cmd.pose.position.y = self.position_target[1]
-            # cmd.pose.position.z = self.position_target[2]
-            # cmd.pose.orientation.w = 1.0
-            # self.setpoint_position_pub.publish(cmd)
             # print("Published setpoint: x=%.2f, y=%.2f, z=%.2f" % (
-            #     self.position_target[0],
-            #     self.position_target[1],
+            #     self.position_target[0], 
+            #     self.position_target[1], 
             #     self.position_target[2]
             # ))
+
         else:  # goal mode
             goal_msg = GoalSet()
             goal_msg.drone_id = self.drone_id
@@ -322,6 +353,7 @@ class MavrosBridgeClient:
                 self.position_target[1],
                 self.position_target[2]
             ]
+            # goalモードでも姿勢を送りたい場合は独自拡張が必要
             self.goal_pub.publish(goal_msg)
             print("Published goal: x=%.2f, y=%.2f, z=%.2f" % (
                 self.position_target[0], 
@@ -329,8 +361,82 @@ class MavrosBridgeClient:
                 self.position_target[2]
             ))
 
-        # Publish visualization marker
+        # 可視化用
         self.publish_marker()
+
+    # def publish_setpoint(self, dx=0.0, dy=0.0, dz=0.0):
+    #     if self.odom_cur is None:
+    #         print("No odometry data received yet.")
+    #         return
+    #     # if not self.activated and not self.use_lcm:
+    #     #     print("Drone not activated yet.")
+    #     #     return
+
+    #     self.mand_stop_pub.publish(Empty())
+
+    #     if not self.init_pose_pid:
+    #         if self.use_lcm:
+    #             self.position_target = np.array([
+    #                 self.odom_cur.odom.pose.pose.position.x,
+    #                 self.odom_cur.odom.pose.pose.position.y,
+    #                 self.odom_cur.odom.pose.pose.position.z
+    #             ])
+    #         else:
+    #             self.position_target = np.array([
+    #                 self.odom_cur.pose.pose.position.x,
+    #                 self.odom_cur.pose.pose.position.y,
+    #                 self.odom_cur.pose.pose.position.z
+    #             ])
+    #         self.init_pose_pid = True
+
+    #     # Update target position
+    #     self.position_target += np.array([dx, dy, dz])
+
+    #     if self.mode == 'setpoint_position':
+    #         cmd = PositionCommand()
+    #         cmd.header.stamp = rospy.Time.now()
+    #         cmd.header.frame_id = "world"
+    #         cmd.drone_id = self.drone_id
+    #         cmd.pose.position.x = self.position_target[0]
+    #         cmd.pose.position.y = self.position_target[1]
+    #         cmd.pose.position.z = self.position_target[2]
+    #         cmd.pose.orientation.w = 1.0
+    #         self.setpoint_position_pub.publish(cmd)
+    #         print("Published setpoint: x=%.2f, y=%.2f, z=%.2f" % (
+    #             self.position_target[0], 
+    #             self.position_target[1], 
+    #             self.position_target[2]
+    #         ))
+    #         # cmd = PoseStamped()
+    #         # cmd.header.stamp = rospy.Time.now()
+    #         # cmd.header.frame_id = "world"
+    #         # cmd.pose.position.x = self.position_target[0]
+    #         # cmd.pose.position.y = self.position_target[1]
+    #         # cmd.pose.position.z = self.position_target[2]
+    #         # cmd.pose.orientation.w = 1.0
+    #         # self.setpoint_position_pub.publish(cmd)
+    #         # print("Published setpoint: x=%.2f, y=%.2f, z=%.2f" % (
+    #         #     self.position_target[0],
+    #         #     self.position_target[1],
+    #         #     self.position_target[2]
+    #         # ))
+    #     else:  # goal mode
+    #         goal_msg = GoalSet()
+    #         goal_msg.drone_id = self.drone_id
+    #         goal_msg.goal = [
+    #             self.position_target[0],
+    #             self.position_target[1],
+    #             self.position_target[2]
+    #         ]
+    #         self.goal_pub.publish(goal_msg)
+    #         print("Published goal: x=%.2f, y=%.2f, z=%.2f" % (
+    #             self.position_target[0], 
+    #             self.position_target[1], 
+    #             self.position_target[2]
+    #         ))
+
+    #     # Publish visualization marker
+    #     self.publish_marker()
 
     def publish_marker(self):
         marker = Marker()
@@ -338,23 +444,24 @@ class MavrosBridgeClient:
         marker.header.stamp = rospy.Time.now()
         marker.type = Marker.SPHERE
         marker.action = Marker.ADD
+        marker.lifetime = rospy.Duration(0.5)
         marker.pose.position.x = self.position_target[0]
         marker.pose.position.y = self.position_target[1]
         marker.pose.position.z = self.position_target[2]
-        marker.scale.x = 0.2
-        marker.scale.y = 0.2
-        marker.scale.z = 0.2
-        marker.color.a = 1.0
+        marker.scale.x = 0.1
+        marker.scale.y = 0.1
+        marker.scale.z = 0.1
+        marker.color.a = 0.7
         marker.color.r = 1.0
         marker.color.g = 0.0
         marker.color.b = 0.0
         self.target_marker_pub.publish(marker)
 
     def handle_takeoff(self):
-        if self.odom_cur is None:
-            print("No odometry data received yet.")
-            return
-        self.demo_manager.fix_target(self.odom_cur)
+        # if self.odom_cur is None:
+        #     print("No odometry data received yet.")
+        #     return
+        # self.demo_manager.fix_target(self.odom_cur)
 
         if self.use_lcm:
             cmd = CommandTOL()
@@ -382,6 +489,11 @@ class MavrosBridgeClient:
 
     def call_activate_service(self, activate):
         service_name = '/mavros_bridge/activate'
+
+        if self.odom_cur is None:
+            print("No odometry data received yet.")
+            return
+        self.demo_manager.fix_target(self.odom_cur, activate)
         
         try:
             rospy.wait_for_service(service_name, timeout=5.0)
@@ -492,19 +604,18 @@ class MavrosBridgeClient:
             print("Using LCM mode")
         else:
             print("Using non-LCM mode")
-            print("A: Activate, D: Deactivate")
-        print("T: Takeoff, L: Land")
+            print("\033[1;32mA: Activate\033[0m, \033[1;32mD: Deactivate\033[0m")
+        print("\033[1;32mT: Takeoff\033[0m, \033[1;32mL: Land\033[0m")
+        print("\033[1;32mX: Execute Demo Sequence\033[0m, \033[1;32mE: Escape\033[0m, \033[1;32mS: Shot\033[0m")
         print("Arrow keys: Move in x-y plane")
         print("Page Up/Down: Move up/down")
-        print("G: Switch to goal mode")
-        print("P: Switch to setpoint position mode")
         print("Q: Quit")
         
         while True:
             char = self.getch()
-            # rospy.spin_once()
             
             if not self.use_lcm:
+                self.init_pose_pid = False
                 if char == 'a':
                     result = self.call_activate_service(True)
                     self.print_status("activated", result)
@@ -521,14 +632,17 @@ class MavrosBridgeClient:
                     if self.demo_manager is None:
                         print("DemoManager not initialized yet.")
                         continue
+                    self.mandatory_stop = False
                     self.demo_manager.publish_goal()
-                    print("Start Demo Sequence: Publish Approx Goal")
+                    print("Execute Demo Sequence")
+                    print("Publish Approx Goal")
                 elif char == 'e':
                     if self.demo_manager is None:
                         print("DemoManager not initialized yet.")
                         continue
+                    self.mandatory_stop = False
                     self.demo_manager.publish_escape()
-                    print("Start Demo Sequence: Publish Escape Goal")
+                    print("Escape")
 
             if char == 't':
                 self.handle_takeoff()

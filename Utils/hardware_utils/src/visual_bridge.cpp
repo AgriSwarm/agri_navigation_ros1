@@ -28,6 +28,52 @@ void MavrosBridge::publishTemp(const std::string& file_path, ros::Publisher& pub
     }
 }
 
+void MavrosBridge::pubDebugText(swarm_msgs::SystemStatus msg)
+{
+    jsk_rviz_plugins::OverlayText text;
+    text.action = jsk_rviz_plugins::OverlayText::ADD;
+    text.width = 500;
+    text.height = 500;
+    text.left = 10;
+    text.top = 10;
+    text.bg_color.r = 0.0;
+    text.bg_color.g = 0.0;
+    text.bg_color.b = 0.0;
+    text.bg_color.a = 0.5;
+    text.line_width = 2;
+    text.text_size = 20;
+    text.font = "DejaVu Sans Mono";
+    text.fg_color.r = 1.0;
+    text.fg_color.g = 1.0;
+    text.fg_color.b = 1.0;
+    text.fg_color.a = 1.0;
+
+    std::string infra_status;
+    switch(msg.infra_status) {
+        case swarm_msgs::SystemStatus::INFRA_INACTIVE:
+            infra_status = "INACTIVE";
+            break;
+        case swarm_msgs::SystemStatus::INFRA_AP_CONNECTED:
+            infra_status = "AP_CONNECTED";
+            break;
+        case swarm_msgs::SystemStatus::INFRA_ODOM_READY:
+            infra_status = "ODOM_READY";
+            break;
+        case swarm_msgs::SystemStatus::INFRA_AP_EKF_READY:
+            infra_status = "AP_EKF_READY";
+            break;
+        case swarm_msgs::SystemStatus::INFRA_ARMED:
+            infra_status = "ARMED";
+            break;
+    }
+
+    // std::string status_str = msg.ap_status + "::" + msg.nav_status;
+    std::string status_str = "INFRA: " + infra_status + "\nAP: " + msg.ap_status + "\nNAV: " + msg.nav_status;
+    text.text = status_str;
+
+    debug_text_pub_.publish(text);
+}
+
 void MavrosBridge::pubPictgramState(swarm_msgs::SystemStatus msg)
 {
     jsk_rviz_plugins::PictogramArray pictogram_array;

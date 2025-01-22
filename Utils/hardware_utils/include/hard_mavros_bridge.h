@@ -33,6 +33,7 @@
 
 #include <jsk_rviz_plugins/Pictogram.h>
 #include <jsk_rviz_plugins/PictogramArray.h>
+#include <jsk_rviz_plugins/OverlayText.h>
 
 #include <swarm_msgs/SystemStatus.h>
 #include <swarm_msgs/CommandTOL.h>
@@ -73,6 +74,7 @@ private:
     // bool takeoffCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
     void stateCallback(mavros_msgs::State msg);
     void pubPictgramState(swarm_msgs::SystemStatus msg);
+    void pubDebugText(swarm_msgs::SystemStatus msg);
     void hpCallback(mavros_msgs::HomePosition msg);
     void batteryCallback(sensor_msgs::BatteryState msg);
     void odomCallback(nav_msgs::Odometry msg);
@@ -136,7 +138,7 @@ private:
     ros::Publisher pub_temp1_;
     ros::Timer thermal_timer_, vio_align_timer_, pict_state_timer_;
 
-    ros::Publisher set_gp_origin_pub_, odom_pub_, setpoint_pos_pub_, setpoint_raw_pub_, pict_state_pub_;
+    ros::Publisher set_gp_origin_pub_, odom_pub_, setpoint_pos_pub_, setpoint_raw_pub_, pict_state_pub_, debug_text_pub_;
     ros::ServiceClient mode_client_;
     ros::ServiceClient arm_client_;
     ros::ServiceClient set_msg_rate_group_client_;
