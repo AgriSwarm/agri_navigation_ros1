@@ -9,12 +9,13 @@
 #include <std_srvs/SetBool.h>
 #include <mavros_msgs/CommandTOL.h>
 #include <jsk_rviz_plugins/PictogramArray.h>
+#include <jsk_rviz_plugins/OverlayText.h>
 #include <tf/transform_broadcaster.h>
 
 
 tf::TransformBroadcaster* br_ptr;
 ros::Subscriber _cmd_sub, _status_sub;
-ros::Publisher  _odom_1_pub, _odom_2_pub, status_pub_, pict_state_pub_;
+ros::Publisher  _odom_1_pub, _odom_2_pub, status_pub_, pict_state_pub_, debug_text_pub_;
 ros::Timer pict_state_timer_;
 swarm_msgs::SystemStatus status_cur_;
 ros::ServiceServer _takeoff_server, _activate_server;
@@ -154,6 +155,52 @@ void pubOdom()
 	_odom_2_pub.publish(odom);
 }
 
+void pubDebugText(swarm_msgs::SystemStatus msg)
+{
+    jsk_rviz_plugins::OverlayText text;
+    text.action = jsk_rviz_plugins::OverlayText::ADD;
+    text.width = 500;
+    text.height = 500;
+    text.left = 10;
+    text.top = 10;
+    text.bg_color.r = 0.0;
+    text.bg_color.g = 0.0;
+    text.bg_color.b = 0.0;
+    text.bg_color.a = 0.5;
+    text.line_width = 2;
+    text.text_size = 20;
+    text.font = "DejaVu Sans Mono";
+    text.fg_color.r = 1.0;
+    text.fg_color.g = 1.0;
+    text.fg_color.b = 1.0;
+    text.fg_color.a = 1.0;
+
+    std::string infra_status;
+    switch(msg.infra_status) {
+        case swarm_msgs::SystemStatus::INFRA_INACTIVE:
+            infra_status = "INACTIVE";
+            break;
+        case swarm_msgs::SystemStatus::INFRA_AP_CONNECTED:
+            infra_status = "AP_CONNECTED";
+            break;
+        case swarm_msgs::SystemStatus::INFRA_ODOM_READY:
+            infra_status = "ODOM_READY";
+            break;
+        case swarm_msgs::SystemStatus::INFRA_AP_EKF_READY:
+            infra_status = "AP_EKF_READY";
+            break;
+        case swarm_msgs::SystemStatus::INFRA_ARMED:
+            infra_status = "ARMED";
+            break;
+    }
+
+    // std::string status_str = msg.ap_status + "::" + msg.nav_status;
+    std::string status_str = "INFRA: " + infra_status + "\nAP: " + msg.ap_status + "\nNAV: " + msg.nav_status;
+    text.text = status_str;
+
+    debug_text_pub_.publish(text);
+}
+
 void pubPictgramState(swarm_msgs::SystemStatus msg)
 {
     jsk_rviz_plugins::PictogramArray pictogram_array;
@@ -259,6 +306,7 @@ void pubPictgramState(swarm_msgs::SystemStatus msg)
 
 void pictStateTimerCallback(const ros::TimerEvent&)
 {
+    pubDebugText(status_cur_);
     pubPictgramState(status_cur_);
     status_pub_.publish(status_cur_);
 }
@@ -280,6 +328,7 @@ int main (int argc, char** argv)
 	_odom_2_pub = nh.advertise<nav_msgs::Odometry>("odometry_2", 1); 
 	status_pub_ = nh.advertise<swarm_msgs::SystemStatus>("/hardware_bridge/system_status", 10);  
 	pict_state_pub_ = nh.advertise<jsk_rviz_plugins::PictogramArray>("/hardware_bridge/system_status_pict", 10);       
+    debug_text_pub_ = nh.advertise<jsk_rviz_plugins::OverlayText>("/hardware_bridge/system_status_text", 10);
 	  
 	pict_state_timer_ = nh.createTimer(ros::Duration(1.0), pictStateTimerCallback);
 
