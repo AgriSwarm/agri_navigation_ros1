@@ -314,7 +314,6 @@ class MavrosBridgeClient:
 
         # ターゲット位置の更新
         self.position_target += world_offset
-
         # ---------------------------
         # 姿勢を「現在の機体姿勢を維持」する場合
         # ---------------------------
@@ -339,11 +338,11 @@ class MavrosBridgeClient:
             cmd.pose.orientation.w = new_orientation.w
 
             self.setpoint_position_pub.publish(cmd)
-            # print("Published setpoint: x=%.2f, y=%.2f, z=%.2f" % (
-            #     self.position_target[0], 
-            #     self.position_target[1], 
-            #     self.position_target[2]
-            # ))
+            print("Published setpoint: x=%.2f, y=%.2f, z=%.2f" % (
+                self.position_target[0], 
+                self.position_target[1], 
+                self.position_target[2]
+            ))
 
         else:  # goal mode
             goal_msg = GoalSet()
@@ -629,6 +628,7 @@ class MavrosBridgeClient:
                     result = self.call_shot_service()
                     self.print_status("shot", result)
                 elif char == 'x':
+                    self.init_pose_pid = False
                     if self.demo_manager is None:
                         print("DemoManager not initialized yet.")
                         continue
@@ -637,6 +637,7 @@ class MavrosBridgeClient:
                     print("Execute Demo Sequence")
                     print("Publish Approx Goal")
                 elif char == 'e':
+                    self.init_pose_pid = False
                     if self.demo_manager is None:
                         print("DemoManager not initialized yet.")
                         continue

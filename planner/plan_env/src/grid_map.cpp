@@ -464,6 +464,13 @@
     md_.camera_pos_(2) = cam_T(2, 3);
     md_.camera_r_m_ = cam_T.block<3, 3>(0, 0);
 
+    ROS_INFO("[grid_map]cam_T = \n%f, %f, %f, %f\n%f, %f, %f, %f\n%f, %f, %f, %f\n%f, %f, %f, %f",
+            cam_T(0, 0), cam_T(0, 1), cam_T(0, 2), cam_T(0, 3),
+            cam_T(1, 0), cam_T(1, 1), cam_T(1, 2), cam_T(1, 3),
+            cam_T(2, 0), cam_T(2, 1), cam_T(2, 2), cam_T(2, 3),
+            cam_T(3, 0), cam_T(3, 1), cam_T(3, 2), cam_T(3, 3));
+
+
     // geometry_msgs::PoseStamped pose;
     // pose.header.stamp = img->header.stamp;
     // pose.header.frame_id = "world";
