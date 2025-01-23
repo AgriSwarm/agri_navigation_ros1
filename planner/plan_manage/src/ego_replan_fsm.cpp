@@ -40,6 +40,7 @@ namespace ego_planner
 
     odom_sub_ = nh.subscribe("odom_world", 1, &EGOReplanFSM::odometryCallback, this);
     mandatory_stop_sub_ = nh.subscribe("mandatory_stop", 1, &EGOReplanFSM::mandatoryStopCallback, this);
+    mandatory_start_sub_ = nh.subscribe("mandatory_start", 1, &EGOReplanFSM::mandatoryStartCallback, this);
 
     /* Use MINCO trajectory to minimize the message size in wireless communication */
     broadcast_ploytraj_pub_ = nh.advertise<traj_utils::MINCOTraj>("planning/broadcast_traj_send", 10);
@@ -268,7 +269,8 @@ namespace ego_planner
       else
       {
         if (enable_fail_safe_ && odom_vel_.norm() < 0.1 && !planner_manager_->grid_map_->getOdomDepthTimeout())
-          changeFSMExecState(GEN_NEW_TRAJ, "FSM");
+          // changeFSMExecState(GEN_NEW_TRAJ, "FSM");
+          changeFSMExecState(WAIT_TARGET, "FSM");
       }
       flag_escape_emergency_ = false;
       break;
@@ -493,7 +495,7 @@ namespace ego_planner
 
   bool EGOReplanFSM::planFromGlobalTraj(const int trial_times /*=1*/) //zx-todo
   {
-
+    ROS_INFO("Plan from global traj.");
     start_pt_ = odom_pos_;
     start_vel_ = odom_vel_;
     start_acc_.setZero();
@@ -516,7 +518,7 @@ namespace ego_planner
 
   bool EGOReplanFSM::planFromLocalTraj(const int trial_times /*=1*/)
   {
-
+    ROS_INFO("Plan from local traj.");
     LocalTrajData *info = &planner_manager_->traj_.local_traj;
     double t_cur = ros::Time::now().toSec() - info->start_time;
 
@@ -713,9 +715,16 @@ namespace ego_planner
   void EGOReplanFSM::mandatoryStopCallback(const std_msgs::Empty &msg)
   {
     mandatory_stop_ = true;
-    ROS_ERROR("Received a mandatory stop command!");
+    ROS_INFO("Received a mandatory stop command!");
     changeFSMExecState(EMERGENCY_STOP, "Mandatory Stop");
     enable_fail_safe_ = false;
+  }
+
+  void EGOReplanFSM::mandatoryStartCallback(const std_msgs::Empty &msg)
+  {
+    mandatory_stop_ = false;
+    ROS_INFO("Received a mandatory start command!");
+    enable_fail_safe_ = true;
   }
 
   void EGOReplanFSM::odometryCallback(const nav_msgs::OdometryConstPtr &msg)

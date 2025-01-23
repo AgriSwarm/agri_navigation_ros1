@@ -176,6 +176,7 @@ void MavrosBridge::pictStateTimerCallback(const ros::TimerEvent&)
         br_.sendTransform(tf::StampedTransform(transform_, ros::Time::now(), "world", "base_link"));
     }
     pubPictgramState(status_cur_);
+    pubDebugText(status_cur_);
     status_pub_.publish(status_cur_);
 }
 

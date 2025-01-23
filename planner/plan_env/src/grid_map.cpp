@@ -464,6 +464,7 @@
     md_.camera_pos_(2) = cam_T(2, 3);
     md_.camera_r_m_ = cam_T.block<3, 3>(0, 0);
 
+
     // geometry_msgs::PoseStamped pose;
     // pose.header.stamp = img->header.stamp;
     // pose.header.frame_id = "world";

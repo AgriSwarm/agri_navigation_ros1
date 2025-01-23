@@ -92,6 +92,7 @@ void TrajServer::visualizeTarget(const Eigen::Vector3d &pos)
     marker.id = 0;
     marker.type = visualization_msgs::Marker::SPHERE;
     marker.action = visualization_msgs::Marker::ADD;
+    marker.lifetime = ros::Duration(0.5);
     marker.pose.position.x = pos(0);
     marker.pose.position.y = pos(1);
     marker.pose.position.z = pos(2);
