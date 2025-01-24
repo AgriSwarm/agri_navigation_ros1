@@ -185,12 +185,15 @@ void TrajServer::setpointPosCallback(const swarm_msgs::PositionCommand::ConstPtr
 
 void TrajServer::targetPoseCallback(const quadrotor_msgs::TrackingPose::ConstPtr &msg)
 {
+    ROS_INFO("[traj_server] targetPoseCallback");
     if (msg->drone_id != drone_id_ || escape_mode_)
     {
+        ROS_INFO("[traj_server] drone_id: %d, escape_mode: %d", msg->drone_id, escape_mode_);
         return;
     }
     if(msg->target_status == quadrotor_msgs::TrackingPose::TARGET_STATUS_APPROXIMATE)
     {
+        ROS_INFO("[traj_server] Mode changed from %s to APPROACH", modeToString(mode_).c_str());
         Eigen::Vector3d goal_pos = Eigen::Vector3d(msg->center.x, msg->center.y, msg->center.z);
         Eigen::Vector3d diff = goal_pos - last_goal_pos_;
         if(diff.norm() > update_goal_threshold_ || first_sensing_)
@@ -216,11 +219,13 @@ void TrajServer::targetPoseCallback(const quadrotor_msgs::TrackingPose::ConstPtr
 
         if((pos_diff.norm() > root_tracking_threshold_) || (yaw_diff > root_tracking_yaw_threshold_))
         {
+            ROS_INFO("[traj_server] Mode changed from %s to ROOT_TRACK", modeToString(mode_).c_str());
             updateMode(NavigationMode::ROOT_TRACK);
             executeRootTracking(tracking_state_);
         }
         else
         {
+            ROS_INFO("[traj_server] Mode changed from %s to PURE_TRACK", modeToString(mode_).c_str());
             updateMode(NavigationMode::PURE_TRACK);
         }
     }

@@ -32,13 +32,14 @@ class DemoManager:
     def __init__(self, init_odom, drone_id):
         # パラメータ設定
         self.dummy_flower_trigger_radius = 1.5
-        self.route_track_trigger_radius = 0.5
-        self.dummy_target_rel_position = [5.0, 0.0, 1.0]
+        self.route_track_trigger_radius = 1.0
+        self.dummy_target_rel_position = [2.0, 0.0, 1.0]
         euler = [0.0, 1.0, 0.5]
         self.dummy_target_rel_orientation = R.from_euler('xyz', euler).as_quat()
         self.tracking_distance = 0.5
         self.drone_id = drone_id
         self.initialized = False
+        self.pub_dummy_target = True
 
         self.goal_pub = rospy.Publisher('/goal_with_id', GoalSet, queue_size=10)
         self.escape_pub = rospy.Publisher('/escape_with_id', GoalSet, queue_size=10)
@@ -194,7 +195,7 @@ class DemoManager:
                          (current_pos.z - target_pos.z)**2)
 
         # dummy_flower_trigger_radius以内に入ったらTrackingPoseとdummy_target_positionをpublish
-        if dist <= self.dummy_flower_trigger_radius:
+        if dist <= self.dummy_flower_trigger_radius and self.pub_dummy_target:
             # TrackingPose生成
             tp = TrackingPose()
             tp.drone_id = self.drone_id
@@ -606,6 +607,7 @@ class MavrosBridgeClient:
             print("\033[1;32mA: Activate\033[0m, \033[1;32mD: Deactivate\033[0m")
         print("\033[1;32mT: Takeoff\033[0m, \033[1;32mL: Land\033[0m")
         print("\033[1;32mX: Execute Demo Sequence\033[0m, \033[1;32mE: Escape\033[0m, \033[1;32mS: Shot\033[0m")
+        print("\033[1;32mF: Fix target\033[0m")
         print("Arrow keys: Move in x-y plane")
         print("Page Up/Down: Move up/down")
         print("Q: Quit")
@@ -649,6 +651,9 @@ class MavrosBridgeClient:
                 self.handle_takeoff()
             elif char == 'l':
                 self.handle_land()
+            elif char == 'f':
+                self.demo_manager.fix_target(self.odom_cur, True)
+                print("Fixed target")
             elif char == 'g':
                 self.mode = 'goal'
                 print("Switched to goal mode")
