@@ -34,7 +34,7 @@ class DemoManager:
         self.dummy_flower_trigger_radius = 1.5
         self.route_track_trigger_radius = 1.0
         self.dummy_target_rel_position = [2.0, 0.0, 1.0]
-        euler = [0.0, 1.0, 0.5]
+        euler = [0.0, 0.0, -2.0]
         self.dummy_target_rel_orientation = R.from_euler('xyz', euler).as_quat()
         self.tracking_distance = 0.5
         self.drone_id = drone_id
@@ -166,7 +166,7 @@ class DemoManager:
         self.dummy_target_pose.position.x += np.random.normal(0, 0.005)
         self.dummy_target_pose.position.y += np.random.normal(0, 0.005)
 
-        noise_euler = [0.001, 0.001, 0.0]
+        noise_euler = [0.0, 0.0, 0.0]
         quat_cur = [self.dummy_target_pose.orientation.x,
                     self.dummy_target_pose.orientation.y,
                     self.dummy_target_pose.orientation.z,
