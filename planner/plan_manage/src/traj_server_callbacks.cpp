@@ -188,7 +188,7 @@ void TrajServer::targetPoseCallback(const quadrotor_msgs::TrackingPose::ConstPtr
     ROS_INFO("[traj_server] targetPoseCallback");
     if (msg->drone_id != drone_id_ || escape_mode_)
     {
-        ROS_INFO("[traj_server] drone_id: %d, escape_mode: %d", msg->drone_id, escape_mode_);
+        ROS_INFO("[traj_server] drone_id: %d, msg->drone_id: %d, escape_mode_: %d", drone_id_, msg->drone_id, escape_mode_);
         return;
     }
     if(msg->target_status == quadrotor_msgs::TrackingPose::TARGET_STATUS_APPROXIMATE)
