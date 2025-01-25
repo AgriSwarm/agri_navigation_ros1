@@ -75,7 +75,7 @@ DroneState TrajServer::computeTrackingState(const quadrotor_msgs::TrackingPose::
     double yaw = theta + M_PI;
     state.pos(0) = center.x + distance * cos(theta);
     state.pos(1) = center.y + distance * sin(theta);
-    state.pos(2) = center.z;
+    state.pos(2) = center.z - 0.15;
     state.yaw = yaw;
     state.only_pose = true;
     state.initialized = true;
