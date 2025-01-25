@@ -126,8 +126,8 @@ bool TrajServer::PureTargetControl(const DroneState &target_state)
     // 2. 一度に目標を指令せず，一定ステップ分だけ近づける
     //    （例: pos_step=0.1, yaw_step=0.05など）
     // -----------------------
-    const double pos_step = 0.1;   // 1回の制御周期で近づく位置ステップ
-    const double yaw_step = 0.3;  // 1回の制御周期で近づくヨーステップ
+    const double pos_step = 0.05;   // 1回の制御周期で近づく位置ステップ
+    const double yaw_step = 0.15;  // 1回の制御周期で近づくヨーステップ
 
     // 次に指令する位置
     Eigen::Vector3d next_pos;
@@ -172,7 +172,7 @@ bool TrajServer::PureTargetControl(const DroneState &target_state)
     cmd_state.yaw      = next_yaw;
     cmd_state.yaw_rate = 0.0;
     cmd_state.yaw_acc  = 0.0;
-    cmd_state.only_pose = true;
+    cmd_state.only_pose = false;
 
     // コマンド送信
     publishCmd(cmd_state);
