@@ -21,7 +21,7 @@ import math
 from geometry_msgs.msg import Pose, Point, Quaternion, Vector3
 from nav_msgs.msg import Odometry
 from visualization_msgs.msg import Marker
-from quadrotor_msgs.msg import TrackingPose, GoalSet
+from quadrotor_msgs.msg import TrackingPose, GoalSet, Ball
 from scipy.spatial.transform import Rotation as R
 from tf.transformations import quaternion_matrix, quaternion_multiply
 
@@ -39,7 +39,7 @@ class DemoManager:
         self.tracking_distance = 0.5
         self.drone_id = drone_id
         self.initialized = False
-        self.pub_dummy_target = True
+        self.pub_dummy_target = False
 
         self.goal_pub = rospy.Publisher('/goal_with_id', GoalSet, queue_size=10)
         self.escape_pub = rospy.Publisher('/escape_with_id', GoalSet, queue_size=10)
@@ -48,6 +48,7 @@ class DemoManager:
         self.dummy_target_pub = rospy.Publisher("/cmd_gcs/dummy_target_position", PoseStamped, queue_size=10)
         self.structure_polygon_pub = rospy.Publisher("/cmd_gcs/structure_polygon", PolygonStamped, queue_size=10)
         self.mand_start_pub = rospy.Publisher('/mandatory_start_to_planner', Empty, queue_size=10)
+        self.approximated_target_pose_pub = rospy.Publisher('/approximated_target_pose', Ball, queue_size=10)
 
         self.transform_by_odom(init_odom)
 
@@ -160,6 +161,12 @@ class DemoManager:
         self.structure_polygon_pub.publish(structure_polygon)
         self.marker_pub.publish(route_marker)
         self.marker_pub.publish(flower_marker)
+
+        # approximated_target_poseをpublish
+        approximated_target_pose = Ball()
+        approximated_target_pose.radius = self.dummy_flower_trigger_radius
+        approximated_target_pose.centroid = self.dummy_target_pose.position
+        self.approximated_target_pose_pub.publish(approximated_target_pose)
 
     def noise_process(self):
         # add noise to self.dummy_target_pose

@@ -78,6 +78,7 @@ add_message_files(
   FullState.msg
   Position.msg
   TrackingPose.msg
+  Ball.msg
 )
 
 add_service_files(
