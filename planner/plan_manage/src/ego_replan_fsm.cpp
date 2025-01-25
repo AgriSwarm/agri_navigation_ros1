@@ -670,7 +670,7 @@ namespace ego_planner
         ROS_ERROR("The goal is too close to the drone, can't find a collision-free point.");
         return;
       }
-      end_wp = end_wp + (end_wp - odom_pos_).normalized() * planner_manager_->grid_map_->getResolution();
+      end_wp = end_wp + (odom_pos_ - end_wp).normalized() * planner_manager_->grid_map_->getResolution();
       ROS_INFO("end_wp is moved to: %f, %f, %f", end_wp(0), end_wp(1), end_wp(2));
     }
 
