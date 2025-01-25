@@ -31,7 +31,7 @@ from geometry_msgs.msg import Polygon, PolygonStamped, Point32
 class DemoManager:
     def __init__(self, init_odom, drone_id):
         # パラメータ設定
-        self.dummy_flower_trigger_radius = 1.5
+        self.dummy_flower_trigger_radius = 1.0
         self.route_track_trigger_radius = 1.0
         self.dummy_target_rel_position = [2.0, 0.0, 1.0]
         euler = [0.0, 0.0, -2.0]

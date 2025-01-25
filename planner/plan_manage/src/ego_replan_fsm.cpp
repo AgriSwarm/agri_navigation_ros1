@@ -654,7 +654,23 @@ namespace ego_planner
 
     ROS_INFO("Received goal: %f, %f, %f", msg->goal[0], msg->goal[1], msg->goal[2]);
 
+    // if(planner_manager_->grid_map_->getInflateOccupancy(Eigen::Vector3d(msg->goal[0], msg->goal[1], msg->goal[2])))
+    // {
+    //   ROS_ERROR("The goal is in collision!, Move goal to the nearest collision-free point.");
+      
+    // }
     Eigen::Vector3d end_wp(msg->goal[0], msg->goal[1], msg->goal[2]);
+    while(planner_manager_->grid_map_->getInflateOccupancy(end_wp))
+    {
+      ROS_ERROR("The goal is in collision!, Move goal to the nearest collision-free point.");
+      if((end_wp - odom_pos_).norm() < planner_manager_->grid_map_->getResolution())
+      {
+        ROS_ERROR("The goal is too close to the drone, can't find a collision-free point.");
+        return;
+      }
+      end_wp = end_wp + (end_wp - odom_pos_).normalized() * planner_manager_->grid_map_->getResolution();
+    }
+
     if (planNextWaypoint(end_wp))
     {
       have_trigger_ = true;
