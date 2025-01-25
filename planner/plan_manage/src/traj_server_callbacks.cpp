@@ -137,6 +137,10 @@ void TrajServer::polyTrajCallback(const traj_utils::PolyTraj::ConstPtr &msg)
         return;
     }
 
+    if(mode_ == NavigationMode::TURN_FOR_ESCAPE){
+        return;
+    }
+
     int piece_nums = msg->duration.size();
     std::vector<double> dura(piece_nums);
     std::vector<poly_traj::CoefficientMat> cMats(piece_nums);
@@ -294,6 +298,7 @@ void TrajServer::cmdTimerCallback(const ros::TimerEvent &event)
         if(PureTargetControl(pursuit_state_))
         {
             ros::Duration(2.0).sleep();
+            updateMode(NavigationMode::POSHOLD);
             publishGoal(reserved_goal_);
         }
     }
