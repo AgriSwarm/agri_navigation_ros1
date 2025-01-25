@@ -660,7 +660,7 @@ namespace ego_planner
       
     // }
     Eigen::Vector3d end_wp(msg->goal[0], msg->goal[1], msg->goal[2]);
-    while(planner_manager_->grid_map_->getInflateOccupancy(end_wp))
+    while(!planner_manager_->grid_map_->getInflateOccupancy(end_wp))
     {
       ROS_ERROR("The goal is in collision!, Move goal to the nearest collision-free point.");
       if((end_wp - odom_pos_).norm() < planner_manager_->grid_map_->getResolution())
