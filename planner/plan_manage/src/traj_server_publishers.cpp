@@ -172,7 +172,7 @@ bool TrajServer::PureTargetControl(const DroneState &target_state)
     cmd_state.yaw      = next_yaw;
     cmd_state.yaw_rate = 0.0;
     cmd_state.yaw_acc  = 0.0;
-    cmd_state.only_pose = false;
+    cmd_state.only_pose = true;
 
     // コマンド送信
     publishCmd(cmd_state);
