@@ -116,6 +116,7 @@ void TrajServer::conservativeEscapeCallback(const quadrotor_msgs::GoalSet::Const
         odom_state_.pos(2));
 
     Eigen::Vector3d diff = reserved_goal_ - odom_state_.pos;
+    escape_cmd_state_ = odom_state_;
     
     pursuit_state_.pos << backword(0), backword(1), backword(2);
     double yaw = atan2(diff(1), diff(0));
@@ -293,9 +294,18 @@ void TrajServer::cmdTimerCallback(const ros::TimerEvent &event)
     {
         publishPinCmd();
     }
-    else if(mode_ == NavigationMode::TURN_FOR_PERSUIT || mode_ == NavigationMode::TURN_FOR_ESCAPE)
+    else if(mode_ == NavigationMode::TURN_FOR_PERSUIT)
     {
         if(PureTargetControl(pursuit_state_))
+        {
+            ros::Duration(2.0).sleep();
+            updateMode(NavigationMode::POSHOLD);
+            publishGoal(reserved_goal_);
+        }
+    }
+    else if(mode_ == NavigationMode::TURN_FOR_ESCAPE)
+    {
+        if(SequentialTargetControl(pursuit_state_))
         {
             ros::Duration(2.0).sleep();
             updateMode(NavigationMode::POSHOLD);
