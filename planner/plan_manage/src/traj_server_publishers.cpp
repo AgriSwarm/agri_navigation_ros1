@@ -119,7 +119,7 @@ bool TrajServer::SequentialTargetControl(const DroneState &target_state)
     while (yaw_error < -M_PI) yaw_error += 2.0 * M_PI;
 
     const double pos_step = 0.01;   // 1回の制御周期で近づく位置ステップ
-    const double yaw_step = 0.01;   // 1回の制御周期で近づくヨーステップ
+    const double yaw_step = 0.001;   // 1回の制御周期で近づくヨーステップ
 
     // 次に指令する位置
     Eigen::Vector3d next_pos;
