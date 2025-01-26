@@ -44,7 +44,7 @@ class DemoManager:
         self.tracking_distance = 0.5
         self.drone_id = drone_id
         self.initialized = False
-        self.pub_dummy_target = True
+        self.pub_dummy_target = False
 
         self.goal_pub = rospy.Publisher('/goal_with_id', GoalSet, queue_size=10)
         self.escape_pub = rospy.Publisher('/escape_with_id', GoalSet, queue_size=10)
