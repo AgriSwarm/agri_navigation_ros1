@@ -33,7 +33,8 @@ enum class NavigationMode
     HOVER = 5,
     POSHOLD = 6,
     TURN_FOR_PERSUIT = 7,
-    TURN_FOR_ESCAPE = 8
+    TURN_FOR_ESCAPE = 8,
+    ESCAPE = 9
 };
 
 struct DroneState
@@ -71,7 +72,7 @@ class TrajServer
         ros::Publisher cf_full_state_cmd_pub_, cf_position_cmd_pub_, goal_pub_,target_marker_pub_, setpoint_raw_pub, setpoint_pos_pub, twist_pub;
         ros::ServiceServer update_mode_srv_;
         ros::Timer cmd_timer_;
-        DroneState tracking_state_, last_cmd_state_, odom_state_;
+        DroneState tracking_state_, last_cmd_state_, odom_state_, escape_cmd_state_;
         boost::shared_ptr<poly_traj::Trajectory> traj_;
         double traj_duration_;
         double update_goal_threshold_, root_tracking_threshold_, root_tracking_yaw_threshold_, update_tracking_goal_threshold_;
@@ -118,6 +119,7 @@ class TrajServer
         std::pair<double, double> calculate_yaw(double t_cur, NavigationMode mode);
         DroneState computeTrackingState(const quadrotor_msgs::TrackingPose::ConstPtr &msg);
         bool PureTargetControl(const DroneState &state);
+        bool SequentialTargetControl(const DroneState &target_state);
 
         std::string modeToString(NavigationMode mode){
             switch (mode)
@@ -136,6 +138,12 @@ class TrajServer
                 return "HOVER";
             case NavigationMode::POSHOLD:
                 return "POSHOLD";
+            case NavigationMode::TURN_FOR_PERSUIT:
+                return "TURN_FOR_PERSUIT";
+            case NavigationMode::TURN_FOR_ESCAPE:
+                return "TURN_FOR_ESCAPE";
+            case NavigationMode::ESCAPE:
+                return "ESCAPE";
             default:
                 return "UNKNOWN";
             }

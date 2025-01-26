@@ -105,66 +105,132 @@ void TrajServer::publishMavrosCmd(const DroneState &state)
     }
 }
 
-bool TrajServer::PureTargetControl(const DroneState &target_state)
+bool TrajServer::SequentialTargetControl(const DroneState &target_state)
 {
     if (!odom_received_)
     {
-        ROS_ERROR("[TrajServer::PureTargetControl] Not found odom state");
+        ROS_ERROR("[TrajServer::SequentialTargetControl] Not found odom state");
         return false;
     }
 
-    Eigen::Vector3d pos_error = target_state.pos - odom_state_.pos;
-    double yaw_error = target_state.yaw - odom_state_.yaw;
-    while (yaw_error > M_PI) yaw_error -= 2 * M_PI;
-    while (yaw_error < -M_PI) yaw_error += 2 * M_PI;
-    
-    const double kp_pos = 1.0;
-    const double kp_yaw = 2.0; 
-    double vel_limit = 2.0;
-    double yaw_rate_limit = 1.0;
+    Eigen::Vector3d pos_error = target_state.pos - escape_cmd_state_.pos;
+    double yaw_error = target_state.yaw - escape_cmd_state_.yaw;
+    while (yaw_error >  M_PI) yaw_error -= 2.0 * M_PI;
+    while (yaw_error < -M_PI) yaw_error += 2.0 * M_PI;
+
+    const double pos_step = 0.01;   // 1回の制御周期で近づく位置ステップ
+    const double yaw_step = 0.001;   // 1回の制御周期で近づくヨーステップ
+
+    // 次に指令する位置
+    Eigen::Vector3d next_pos;
+    double dist_to_target = pos_error.norm();
+    if (dist_to_target < pos_step)
+    {
+        next_pos = target_state.pos; 
+    }
+    else
+    {
+        next_pos = escape_cmd_state_.pos + pos_step * pos_error.normalized();
+    }
+
+    // 次に指令するyaw
+    double next_yaw;
+    double abs_yaw_error = std::fabs(yaw_error);
+    if (abs_yaw_error < yaw_step)
+    {
+        next_yaw = target_state.yaw;
+    }
+    else
+    {
+        // 符号を考慮して yaw_step だけ近づく
+        double sign = (yaw_error > 0.0) ? 1.0 : -1.0;
+        next_yaw = escape_cmd_state_.yaw + sign * yaw_step;
+        // 範囲 [-pi, pi] に正規化
+        if (next_yaw >  M_PI) next_yaw -= 2.0 * M_PI;
+        if (next_yaw < -M_PI) next_yaw += 2.0 * M_PI;
+    }
 
     DroneState cmd_state;
-    cmd_state.pos = target_state.pos;
-    cmd_state.vel = kp_pos * pos_error;
-
-    if (cmd_state.vel.norm() > vel_limit)
-    {
-        cmd_state.vel = cmd_state.vel.normalized() * vel_limit;
-    }
-    cmd_state.yaw = target_state.yaw;
-    cmd_state.yaw_rate = kp_yaw * yaw_error;
-    cmd_state.yaw_rate = std::max(std::min(cmd_state.yaw_rate, yaw_rate_limit), -yaw_rate_limit);
-
-    cmd_state.acc.setZero();
-    cmd_state.jerk.setZero();
-    cmd_state.snap.setZero();
-    cmd_state.yaw_acc = 0.0;
+    cmd_state.pos      = next_pos;
+    cmd_state.vel      = Eigen::Vector3d::Zero(); // ステップ制御なので速度は 0
+    cmd_state.acc      = Eigen::Vector3d::Zero();
+    cmd_state.jerk     = Eigen::Vector3d::Zero();
+    cmd_state.snap     = Eigen::Vector3d::Zero();
+    cmd_state.yaw      = next_yaw;
+    cmd_state.yaw_rate = 0.0;
+    cmd_state.yaw_acc  = 0.0;
     cmd_state.only_pose = true;
 
+    escape_cmd_state_ = cmd_state;
     publishCmd(cmd_state);
 
-    // for visualization
-    // geometry_msgs::TwistStamped twist;
-    // twist.header.stamp = ros::Time::now();
-    // twist.header.frame_id = "base_link";
-    // twist.twist.angular.x = 0;
-    // twist.twist.angular.y = 0;
-    // twist.twist.angular.z = cmd_state.yaw_rate;
-    // twist.twist.linear.x = cmd_state.vel(0);
-    // twist.twist.linear.y = cmd_state.vel(1);
-    // twist.twist.linear.z = cmd_state.vel(2);
-    // twist_pub.publish(twist);
-    
-    bool reached = (pos_error.norm() < ctrl_pos_threshold_) && (std::abs(yaw_error) < ctrl_yaw_threshold_);
+    Eigen::Vector3d final_pos_error = target_state.pos - next_pos;
+    double final_yaw_error = target_state.yaw - next_yaw;
+    // yaw の誤差再正規化
+    while (final_yaw_error >  M_PI) final_yaw_error -= 2.0 * M_PI;
+    while (final_yaw_error < -M_PI) final_yaw_error += 2.0 * M_PI;
 
-    if(reached)
+    bool reached = (final_pos_error.norm() < ctrl_pos_threshold_) 
+                && (std::fabs(final_yaw_error) < ctrl_yaw_threshold_);
+
+    if (reached)
     {
-        ROS_INFO("[TrajServer::PureTargetControl] Target reached!");
+        ROS_INFO("[TrajServer::SequentialTargetControl] Target reached!");
         updateMode(NavigationMode::POSHOLD);
     }
-    
+
     return reached;
 }
+
+bool TrajServer::PureTargetControl(const DroneState &target_state)
+{
+    // odom が届いていないとき
+    if (!odom_received_)
+    {
+        ROS_ERROR("[TrajServer::DirectTargetControl] Not found odom state");
+        return false;
+    }
+
+    // -----------------------
+    // 1. そのまま target_state をコマンドにする
+    // -----------------------
+    DroneState cmd_state;
+    cmd_state.pos      = target_state.pos;
+    cmd_state.vel      = Eigen::Vector3d::Zero(); // ここでは速度を 0 に
+    cmd_state.acc      = Eigen::Vector3d::Zero();
+    cmd_state.jerk     = Eigen::Vector3d::Zero();
+    cmd_state.snap     = Eigen::Vector3d::Zero();
+    cmd_state.yaw      = target_state.yaw;
+    cmd_state.yaw_rate = 0.0;
+    cmd_state.yaw_acc  = 0.0;
+    cmd_state.only_pose = true;  // 必要に応じて変更
+
+    // コマンド送信
+    publishCmd(cmd_state);
+
+    // -----------------------
+    // 2. 目標到達判定（必要に応じて）
+    // -----------------------
+    // pos と yaw の誤差を計算
+    Eigen::Vector3d pos_error = target_state.pos - odom_state_.pos;
+    double yaw_error = target_state.yaw - odom_state_.yaw;
+
+    // yaw 誤差を [-pi, pi] に正規化
+    while (yaw_error >  M_PI) yaw_error -= 2.0 * M_PI;
+    while (yaw_error < -M_PI) yaw_error += 2.0 * M_PI;
+
+    bool reached = (pos_error.norm() < ctrl_pos_threshold_) 
+                && (std::fabs(yaw_error) < ctrl_yaw_threshold_);
+
+    if (reached)
+    {
+        ROS_INFO("[TrajServer::DirectTargetControl] Target reached!");
+        updateMode(NavigationMode::POSHOLD);
+    }
+
+    return reached;
+}
+
 
 void TrajServer::publishCmd(const DroneState &state)
 {

@@ -54,6 +54,11 @@ void TrajServer::updateMode(NavigationMode mode)
     if(mode == NavigationMode::ROOT_TRACK){
         first_root_tracking_ = true;
     }
+    if(mode == NavigationMode::ESCAPE){
+        if(target_pose_.center.norm() < 1e-6){
+            target_pose_.center = odom_state_.pos;
+        }
+    }
     ROS_INFO("[traj_server] Mode changed from %s to %s", modeToString(mode_).c_str(), modeToString(mode).c_str());
     mode_ = mode;
     status_cur_.nav_status = modeToString(mode_);
@@ -75,8 +80,12 @@ DroneState TrajServer::computeTrackingState(const quadrotor_msgs::TrackingPose::
     double yaw = theta + M_PI;
     state.pos(0) = center.x + distance * cos(theta);
     state.pos(1) = center.y + distance * sin(theta);
-    state.pos(2) = center.z;
+    state.pos(2) = center.z - 0.2;
+    state.vel.setZero();
+    state.acc.setZero();
+    state.jerk.setZero();
     state.yaw = yaw;
+    state.yaw_rate = 0.0;
     state.only_pose = true;
     state.initialized = true;
 
@@ -128,7 +137,17 @@ std::pair<double, double> TrajServer::calculate_yaw(double t_cur, NavigationMode
         double x = target_pose_.center(0) - cmd_pos(0);
         yaw = atan2(y, x);
         yaw_rate = 0.0;
-    }else{
+    }
+    else if (mode == NavigationMode::ESCAPE) 
+    {
+        Eigen::Vector3d cmd_pos = traj_->getPos(t_cur);
+        double y = target_pose_.center(1) - cmd_pos(1);
+        double x = target_pose_.center(0) - cmd_pos(0);
+        yaw = atan2(y, x);
+        yaw_rate = 0.0;
+    } 
+    else
+    {
         Eigen::Vector3d dir;
         if (t_cur + time_forward_ <= traj_duration_)
         {
