@@ -54,6 +54,11 @@ void TrajServer::updateMode(NavigationMode mode)
     if(mode == NavigationMode::ROOT_TRACK){
         first_root_tracking_ = true;
     }
+    if(mode == NavigationMode::ESCAPE){
+        if(target_pose_.center.norm() < 1e-6){
+            target_pose_.center = odom_state_.pos;
+        }
+    }
     ROS_INFO("[traj_server] Mode changed from %s to %s", modeToString(mode_).c_str(), modeToString(mode).c_str());
     mode_ = mode;
     status_cur_.nav_status = modeToString(mode_);
@@ -132,7 +137,17 @@ std::pair<double, double> TrajServer::calculate_yaw(double t_cur, NavigationMode
         double x = target_pose_.center(0) - cmd_pos(0);
         yaw = atan2(y, x);
         yaw_rate = 0.0;
-    }else{
+    }
+    else if (mode == NavigationMode::ESCAPE) 
+    {
+        Eigen::Vector3d cmd_pos = traj_->getPos(t_cur);
+        double y = target_pose_.center(1) - cmd_pos(1);
+        double x = target_pose_.center(0) - cmd_pos(0);
+        yaw = atan2(y, x);
+        yaw_rate = 0.0;
+    } 
+    else
+    {
         Eigen::Vector3d dir;
         if (t_cur + time_forward_ <= traj_duration_)
         {
