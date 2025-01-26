@@ -27,6 +27,11 @@ from tf.transformations import quaternion_matrix, quaternion_multiply
 
 from jsk_recognition_msgs.msg import PolygonArray
 from geometry_msgs.msg import Polygon, PolygonStamped, Point32
+from tf.transformations import (
+    euler_from_quaternion,
+    quaternion_from_euler,
+    quaternion_matrix
+)
 
 class DemoManager:
     def __init__(self, init_odom, drone_id):
@@ -277,7 +282,7 @@ class MavrosBridgeClient:
         self.odom_cur = msg
         self.demo_manager.transform_by_odom(msg)
 
-    def publish_setpoint(self, dx=0.0, dy=0.0, dz=0.0):
+    def publish_setpoint(self, dx=0.0, dy=0.0, dz=0.0, dyaw=0.0):
         if self.odom_cur is None:
             print("No odometry data received yet.")
             return
@@ -285,6 +290,9 @@ class MavrosBridgeClient:
         self.mand_stop_pub.publish(Empty())
         self.mandatory_stop = True
 
+        # ---------------------------
+        # 初回のみ、現在位置を position_target にセット
+        # ---------------------------
         if not self.init_pose_pid:
             if self.use_lcm:
                 self.position_target = np.array([
@@ -301,34 +309,49 @@ class MavrosBridgeClient:
             self.init_pose_pid = True
 
         # ---------------------------
-        # ローカル座標系 → ワールド座標系 変換
+        # 現在の機体姿勢(q)を取得
         # ---------------------------
         if self.use_lcm:
             orientation = self.odom_cur.odom.pose.pose.orientation
         else:
             orientation = self.odom_cur.pose.pose.orientation
 
+        # Quaternionをnumpy配列に
         q = np.array([orientation.x,
                     orientation.y,
                     orientation.z,
                     orientation.w])
 
-        # 回転行列
-        rot_mat = quaternion_matrix(q)[0:3, 0:3]
-
-        # ローカル → ワールドへの並進ベクトル変換
+        # ---------------------------
+        # ローカル座標系でのdx, dy, dzをワールド座標系に変換
+        # ---------------------------
+        rot_mat = quaternion_matrix(q)[0:3, 0:3]  # 3x3回転行列を取得
         local_offset = np.array([dx, dy, dz])
         world_offset = rot_mat.dot(local_offset)
 
         # ターゲット位置の更新
         self.position_target += world_offset
         # ---------------------------
-        # 姿勢を「現在の機体姿勢を維持」する場合
+        # 現在のヨー角に dyaw を足して新しい姿勢を作る
         # ---------------------------
-        # そのまま orientation をコピー
-        new_orientation = orientation
+        # クォータニオン → オイラー角(RPY)
+        roll, pitch, yaw = euler_from_quaternion(q)
+        # ヨー角に dyaw を加算
+        yaw_new = yaw + dyaw
+        # オイラー角 → クォータニオン
+        q_new = quaternion_from_euler(roll, pitch, yaw_new)
 
-        # コマンド生成
+        # new_orientation に変換して格納
+        # (geometry_msgs.msg.Quaternion 等に合わせて下さい)
+        new_orientation = orientation
+        new_orientation.x = q_new[0]
+        new_orientation.y = q_new[1]
+        new_orientation.z = q_new[2]
+        new_orientation.w = q_new[3]
+
+        # ---------------------------
+        # setpoint_position or goal モードで出版
+        # ---------------------------
         if self.mode == 'setpoint_position':
             cmd = PositionCommand()
             cmd.header.stamp = rospy.Time.now()
@@ -339,17 +362,18 @@ class MavrosBridgeClient:
             cmd.pose.position.y = self.position_target[1]
             cmd.pose.position.z = self.position_target[2]
 
-            # ★ ここで機体の姿勢をそのまま反映
+            # 姿勢に反映
             cmd.pose.orientation.x = new_orientation.x
             cmd.pose.orientation.y = new_orientation.y
             cmd.pose.orientation.z = new_orientation.z
             cmd.pose.orientation.w = new_orientation.w
 
             self.setpoint_position_pub.publish(cmd)
-            print("Published setpoint: x=%.2f, y=%.2f, z=%.2f" % (
-                self.position_target[0], 
-                self.position_target[1], 
-                self.position_target[2]
+            print("Published setpoint: x=%.2f, y=%.2f, z=%.2f, yaw=%.2f" % (
+                self.position_target[0],
+                self.position_target[1],
+                self.position_target[2],
+                yaw_new
             ))
 
         else:  # goal mode
@@ -362,10 +386,11 @@ class MavrosBridgeClient:
             ]
             # goalモードでも姿勢を送りたい場合は独自拡張が必要
             self.goal_pub.publish(goal_msg)
-            print("Published goal: x=%.2f, y=%.2f, z=%.2f" % (
-                self.position_target[0], 
-                self.position_target[1], 
-                self.position_target[2]
+            print("Published goal: x=%.2f, y=%.2f, z=%.2f, yaw=%.2f" % (
+                self.position_target[0],
+                self.position_target[1],
+                self.position_target[2],
+                yaw_new
             ))
 
         # 可視化用
@@ -668,9 +693,9 @@ class MavrosBridgeClient:
                 self.mode = 'setpoint_position'
                 print("Switched to setpoint position mode")
             elif char == '\x1b[5~':  # Page Up
-                self.publish_setpoint(dz=0.1)
+                self.publish_setpoint(dyaw=0.1)
             elif char == '\x1b[6~':  # Page Down
-                self.publish_setpoint(dz=-0.1)
+                self.publish_setpoint(dyaw=-0.1)
             elif char.startswith('\x1b['):
                 if char == '\x1b[A':  # Up arrow
                     self.publish_setpoint(dx=0.1)
