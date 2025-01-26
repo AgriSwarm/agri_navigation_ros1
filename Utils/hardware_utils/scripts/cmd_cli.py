@@ -287,7 +287,7 @@ class MavrosBridgeClient:
             print("No odometry data received yet.")
             return
 
-        # self.mand_stop_pub.publish(Empty())
+        self.mand_stop_pub.publish(Empty())
         self.mandatory_stop = True
 
         # ---------------------------
@@ -328,8 +328,9 @@ class MavrosBridgeClient:
         rot_mat = quaternion_matrix(q)[0:3, 0:3]  # 3x3回転行列を取得
         local_offset = np.array([dx, dy, dz])
         world_offset = rot_mat.dot(local_offset)
-        self.position_target += world_offset  # ワールド座標系でのターゲット位置を更新
 
+        # ターゲット位置の更新
+        self.position_target += world_offset
         # ---------------------------
         # 現在のヨー角に dyaw を足して新しい姿勢を作る
         # ---------------------------
@@ -647,6 +648,7 @@ class MavrosBridgeClient:
             char = self.getch()
             
             if not self.use_lcm:
+                self.init_pose_pid = False
                 if char == 'a':
                     result = self.call_activate_service(True)
                     self.print_status("activated", result)
