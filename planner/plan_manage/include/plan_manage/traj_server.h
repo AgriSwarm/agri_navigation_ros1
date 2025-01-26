@@ -33,7 +33,8 @@ enum class NavigationMode
     HOVER = 5,
     POSHOLD = 6,
     TURN_FOR_PERSUIT = 7,
-    TURN_FOR_ESCAPE = 8
+    TURN_FOR_ESCAPE = 8,
+    ESCAPE = 9
 };
 
 struct DroneState
@@ -137,6 +138,12 @@ class TrajServer
                 return "HOVER";
             case NavigationMode::POSHOLD:
                 return "POSHOLD";
+            case NavigationMode::TURN_FOR_PERSUIT:
+                return "TURN_FOR_PERSUIT";
+            case NavigationMode::TURN_FOR_ESCAPE:
+                return "TURN_FOR_ESCAPE";
+            case NavigationMode::ESCAPE:
+                return "ESCAPE";
             default:
                 return "UNKNOWN";
             }

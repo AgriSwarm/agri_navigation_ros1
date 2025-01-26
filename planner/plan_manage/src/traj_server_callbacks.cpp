@@ -43,6 +43,10 @@ bool TrajServer::updateModeCallback(quadrotor_msgs::UpdateMode::Request& req,
     {
         updateMode(NavigationMode::TURN_FOR_ESCAPE);
     }
+    else if (req.mode == quadrotor_msgs::UpdateMode::Request::ESCAPE)
+    {
+        updateMode(NavigationMode::ESCAPE);
+    }
     else
     {
         ROS_ERROR("[traj_server] Unrecognized mode!");
@@ -106,23 +110,24 @@ void TrajServer::conservativeEscapeCallback(const quadrotor_msgs::GoalSet::Const
     {
         return;
     }
-    escape_mode_ = true;
-    float escape_distance = 0.5;
-    reserved_goal_ = Eigen::Vector3d(msg->goal[0], msg->goal[1], msg->goal[2]);
-    // calculate backword from yaw
-    Eigen::Vector3d backword = Eigen::Vector3d(
-        -cos(odom_state_.yaw)*escape_distance+odom_state_.pos(0), 
-        -sin(odom_state_.yaw)*escape_distance+odom_state_.pos(1), 
-        odom_state_.pos(2));
+    updateMode(NavigationMode::ESCAPE);
+    publishGoal(Eigen::Vector3d(msg->goal[0], msg->goal[1], msg->goal[2]));
 
-    Eigen::Vector3d diff = reserved_goal_ - odom_state_.pos;
-    escape_cmd_state_ = odom_state_;
+    // float escape_distance = 0.5;
+    // reserved_goal_ = Eigen::Vector3d(msg->goal[0], msg->goal[1], msg->goal[2]);
+    // Eigen::Vector3d backword = Eigen::Vector3d(
+    //     -cos(odom_state_.yaw)*escape_distance+odom_state_.pos(0), 
+    //     -sin(odom_state_.yaw)*escape_distance+odom_state_.pos(1), 
+    //     odom_state_.pos(2));
+
+    // Eigen::Vector3d diff = reserved_goal_ - odom_state_.pos;
+    // escape_cmd_state_ = odom_state_;
     
-    pursuit_state_.pos << backword(0), backword(1), backword(2);
-    double yaw = atan2(diff(1), diff(0));
-    pursuit_state_.yaw = yaw;
-    pursuit_state_.only_pose = true;
-    updateMode(NavigationMode::TURN_FOR_ESCAPE);
+    // pursuit_state_.pos << backword(0), backword(1), backword(2);
+    // double yaw = atan2(diff(1), diff(0));
+    // pursuit_state_.yaw = yaw;
+    // pursuit_state_.only_pose = true;
+    // updateMode(NavigationMode::TURN_FOR_ESCAPE);
 }
 
 void TrajServer::polyTrajCallback(const traj_utils::PolyTraj::ConstPtr &msg)
@@ -168,10 +173,20 @@ void TrajServer::polyTrajCallback(const traj_utils::PolyTraj::ConstPtr &msg)
     //     updateMode(NavigationMode::SEARCH);
     // }
 
-    if (mode_ != NavigationMode::APPROACH && mode_ != NavigationMode::ROOT_TRACK && mode_ != NavigationMode::PURE_TRACK)
-    {
-        updateMode(NavigationMode::SEARCH);
+    if(mode_ == NavigationMode::APPROACH){
+        return;
     }
+    if(mode_ == NavigationMode::ROOT_TRACK){
+        return;
+    }
+    if(mode_ == NavigationMode::PURE_TRACK){
+        return;
+    }
+    if(mode_ == NavigationMode::ESCAPE){
+        return;
+    }
+
+    updateMode(NavigationMode::SEARCH);
 }
 
 void TrajServer::setpointPosCallback(const swarm_msgs::PositionCommand::ConstPtr &msg)
@@ -191,7 +206,7 @@ void TrajServer::setpointPosCallback(const swarm_msgs::PositionCommand::ConstPtr
 void TrajServer::targetPoseCallback(const quadrotor_msgs::TrackingPose::ConstPtr &msg)
 {
     // ROS_INFO("[traj_server] targetPoseCallback");
-    if (msg->drone_id != drone_id_ || escape_mode_)
+    if (msg->drone_id != drone_id_ || mode_ == NavigationMode::ESCAPE || mode_ == NavigationMode::TURN_FOR_ESCAPE)
     {
         // ROS_INFO("[traj_server] drone_id: %d, msg->drone_id: %d, escape_mode_: %d", drone_id_, msg->drone_id, escape_mode_);
         return;
@@ -260,7 +275,7 @@ void TrajServer::cmdTimerCallback(const ros::TimerEvent &event)
         ROS_ERROR("[traj_server] Lost heartbeat from the planner, is it dead?");
     }
 
-    if(mode_ == NavigationMode::SEARCH || mode_ == NavigationMode::APPROACH || mode_ == NavigationMode::ROOT_TRACK)
+    if(mode_ == NavigationMode::SEARCH || mode_ == NavigationMode::APPROACH || mode_ == NavigationMode::ROOT_TRACK || mode_ == NavigationMode::ESCAPE)
     {
         double t_cur = (time_now - traj_start_time_).toSec();
         if (t_cur < traj_duration_ && t_cur >= 0.0)
