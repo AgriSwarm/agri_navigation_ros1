@@ -58,6 +58,8 @@ void MavrosBridge::thermalTimerCallback(const ros::TimerEvent&)
 {
     publishTemp("/sys/devices/virtual/thermal/thermal_zone0/temp", pub_temp0_);
     publishTemp("/sys/devices/virtual/thermal/thermal_zone1/temp", pub_temp1_);
+    publishCpuUsage("/proc/stat", pub_cpu_usage_);
+    publishGpuUsage("/sys/devices/17000000.ga10b/load", pub_gpu_usage_);
 }
 
 void MavrosBridge::rcCallback(mavros_msgs::RCIn msg)

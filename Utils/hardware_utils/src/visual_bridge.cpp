@@ -1,5 +1,89 @@
 #include "hard_mavros_bridge.h"
 
+void MavrosBridge::publishCpuUsage(const std::string& file_path, ros::Publisher& publisher)
+{
+    std::ifstream file(file_path);
+    if (file.is_open())
+    {
+        std::string line;
+        if (std::getline(file, line))
+        {
+            std::istringstream iss(line);
+            std::string cpuLabel;
+            unsigned long long user, nice, system, idle, iowait, irq, softirq, steal;
+            // /proc/statの1行目は "cpu  <user> <nice> <system> <idle> <iowait> <irq> <softirq> <steal> ..."
+            if (iss >> cpuLabel >> user >> nice >> system >> idle >> iowait >> irq >> softirq >> steal)
+            {
+                // アイデル時間はidleとiowaitの和
+                unsigned long long idleTime = idle + iowait;
+                // 非アイデル時間はその他の値の和
+                unsigned long long nonIdle = user + nice + system + irq + softirq + steal;
+                unsigned long long total = idleTime + nonIdle;
+
+                // 前回値をstatic変数で保持（初回は0のため計算できない）
+                static unsigned long long prevTotal = 0, prevIdle = 0;
+                float cpuUsage = 0.0f;
+                if (prevTotal != 0)
+                {
+                    unsigned long long totalDelta = total - prevTotal;
+                    unsigned long long idleDelta = idleTime - prevIdle;
+                    if (totalDelta > 0)
+                    {
+                        // 使用率＝(デルタ合計－デルタアイドル)／デルタ合計×100[%]
+                        cpuUsage = static_cast<float>(totalDelta - idleDelta) / totalDelta * 100.0f;
+                    }
+                }
+                prevTotal = total;
+                prevIdle  = idleTime;
+
+                std_msgs::Float32 msg;
+                msg.data = cpuUsage;
+                publisher.publish(msg);
+            }
+            else
+            {
+                ROS_ERROR_STREAM("Failed to parse CPU stat line: " << line);
+            }
+        }
+        file.close();
+    }
+    else
+    {
+        ROS_ERROR_STREAM("Unable to open file: " << file_path);
+    }
+}
+
+// GPU使用率を読み出してpublishする関数
+void MavrosBridge::publishGpuUsage(const std::string& file_path, ros::Publisher& publisher)
+{
+    std::ifstream file(file_path);
+    if (file.is_open())
+    {
+        std::string line;
+        if (std::getline(file, line))
+        {
+            try
+            {
+                // GPUのloadファイルは、例えば"674"のような値が得られると仮定し、
+                // 必要に応じて10で割ることでパーセンテージ(67.4%)に変換する例です。
+                float gpuLoad = std::stof(line) / 10.0f;
+                std_msgs::Float32 msg;
+                msg.data = gpuLoad;
+                publisher.publish(msg);
+            }
+            catch (const std::exception& e)
+            {
+                ROS_ERROR_STREAM("Error converting GPU load: " << e.what());
+            }
+        }
+        file.close();
+    }
+    else
+    {
+        ROS_ERROR_STREAM("Unable to open file: " << file_path);
+    }
+}
+
 void MavrosBridge::publishTemp(const std::string& file_path, ros::Publisher& publisher)
 {
     std::ifstream file(file_path);
