@@ -361,8 +361,11 @@ void MavrosBridge::pubPictgramState(swarm_msgs::SystemStatus msg)
 //     shot_cone_pub_.publish(marker);
 // }
 
-void MavrosBridge::pubShotCone(rviz_visual_tools::colors cone_color, double duration, double scale_factor, double alpha)
+void MavrosBridge::pubShotCone(rviz_visual_tools::colors cone_color, double duration)
 {
+    double scale_factor = 0.2;  // 円錐のスケールファクター
+    double alpha = 0.5;         // マーカーの透明度
+
     // マーカーの基本設定
     visualization_msgs::Marker marker;
     marker.header.frame_id = "base_link";
