@@ -23,6 +23,8 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 find_package(yaml-cpp REQUIRED)
+find_package(Eigen3 REQUIRED)
+find_package(rviz_visual_tools REQUIRED)
 
 generate_dynamic_reconfigure_options(
   cfg/PID.cfg
@@ -50,6 +52,8 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${YAML_CPP_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIRS}
+  ${rviz_visual_tools_INCLUDE_DIRS}
   /usr/local/include
 )
 
@@ -65,8 +69,10 @@ add_executable(hard_mavros_bridge
 target_link_libraries(hard_mavros_bridge
   ${catkin_LIBRARIES}
   ${YAML_CPP_LIBRARIES}
+  ${rviz_visual_tools_LIBRARIES}  # ← これを追加
   JetsonGPIO
 )
+
 
 add_dependencies(hard_mavros_bridge ${PROJECT_NAME}_gencfg)
 add_dependencies(hard_mavros_bridge ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

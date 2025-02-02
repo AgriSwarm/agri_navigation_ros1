@@ -54,6 +54,8 @@
 #include <JetsonGPIO.h>
 #include <hardware_utils/RotateMotor.h>
 
+#include <rviz_visual_tools/rviz_visual_tools.h>
+
 class MavrosBridge
 {
 public:
@@ -107,6 +109,8 @@ private:
     void publishTemp(const std::string& file_path, ros::Publisher& publisher);
     void publishCpuUsage(const std::string& file_path, ros::Publisher& publisher);
     void publishGpuUsage(const std::string& file_path, ros::Publisher& publisher);
+    // void pubShotCone(rviz_visual_tools::Colors cone_color);
+    void pubShotCone(rviz_visual_tools::colors cone_color);
 
     hardware_utils::PIDConfig getPIDParam();
 
@@ -158,6 +162,8 @@ private:
     mavros_msgs::State last_state_;
     nav_msgs::Odometry odom_cur_;
     swarm_msgs::SystemStatus status_cur_;
+    // rviz_visual_tools::RvizVisualTools visual_tools_;
+    rviz_visual_tools::RvizVisualTools* visual_tools_;
 
     bool hp_valid_{ false };
     bool ap_initialized_{ false };

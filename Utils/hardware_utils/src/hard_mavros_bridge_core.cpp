@@ -29,6 +29,10 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~"), server_(config_mutex_)
     pub_temp1_ = nh_.advertise<std_msgs::Float32>("/hardware_bridge/gpu_temperature", 1);
     pub_cpu_usage_ = nh_.advertise<std_msgs::Float32>("/hardware_bridge/cpu_usage", 1);
     pub_gpu_usage_ = nh_.advertise<std_msgs::Float32>("/hardware_bridge/gpu_usage", 1);
+    // rviz_visual_tools::RvizVisualTools visual_tools("base_link", "rviz_cone_marker");
+    // visual_tools_ = new rviz_visual_tools::RvizVisualTools("base_link", "rviz_cone_marker");
+    visual_tools_ = new rviz_visual_tools::RvizVisualTools("base_link", "rviz_cone_marker", nh_);
+    visual_tools_->loadMarkerPub();
 
     mode_client_ = nh_.serviceClient<mavros_msgs::SetMode>("/mavros/set_mode");
     arm_client_ = nh_.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/arming");
