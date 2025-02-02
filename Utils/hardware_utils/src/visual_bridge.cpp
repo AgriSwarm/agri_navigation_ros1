@@ -265,7 +265,7 @@ void MavrosBridge::pubShotCone(rviz_visual_tools::colors cone_color, double dura
     geometry_msgs::Pose cone_pose;
     cone_pose.position.x = 0.0;
     cone_pose.position.y = 0.0;
-    cone_pose.position.z = 0.0;
+    cone_pose.position.z = 1.0;
     cone_pose.orientation.x = 0.0;
     cone_pose.orientation.y = 0.0;
     cone_pose.orientation.z = 0.0;
