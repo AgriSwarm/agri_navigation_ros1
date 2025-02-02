@@ -11,6 +11,8 @@
 #include <jsk_rviz_plugins/PictogramArray.h>
 #include <jsk_rviz_plugins/OverlayText.h>
 #include <tf/transform_broadcaster.h>
+#include <hardware_utils/RotateMotor.h>
+#include <rviz_visual_tools/rviz_visual_tools.h>
 
 
 tf::TransformBroadcaster* br_ptr;
@@ -18,7 +20,8 @@ ros::Subscriber _cmd_sub, _status_sub;
 ros::Publisher  _odom_1_pub, _odom_2_pub, status_pub_, pict_state_pub_, debug_text_pub_;
 ros::Timer pict_state_timer_;
 swarm_msgs::SystemStatus status_cur_;
-ros::ServiceServer _takeoff_server, _activate_server;
+ros::ServiceServer _takeoff_server, _activate_server, _shot_server;
+ros::Publisher shot_cone_pub_;
 
 quadrotor_msgs::PositionCommand _cmd;
 double _init_x, _init_y, _init_z, _init_yaw;
@@ -311,6 +314,92 @@ void pictStateTimerCallback(const ros::TimerEvent&)
     status_pub_.publish(status_cur_);
 }
 
+void pubShotCone(const std_msgs::ColorRGBA &color, double duration)
+{
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = "base_link";
+    marker.header.stamp = ros::Time::now();
+    marker.ns = "shot_cone";
+    marker.id = 0;
+    marker.type = visualization_msgs::Marker::TRIANGLE_LIST;
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.lifetime = ros::Duration(duration);
+    // marker.lifetime = ros::Duration(0.0);  // 一度だけ表示
+
+    marker.scale.x = 1.0;
+    marker.scale.y = 1.0;
+    marker.scale.z = 1.0;
+
+    marker.pose.position.x = 0.0;
+    marker.pose.position.y = 0.0;
+    marker.pose.position.z = 0.0;
+    marker.pose.orientation.x = 0.0;
+    marker.pose.orientation.y = 0.0;
+    marker.pose.orientation.z = 0.0;
+    marker.pose.orientation.w = 1.0;
+
+    // 円錐のパラメータ設定
+    double length = 0.5;            // 円錐の高さ
+    double coneAngle = 0.4* M_PI / 2;  // 全広がり角 (270°)
+    double halfAngle = coneAngle / 2.0;
+    double radius = length * fabs(tan(halfAngle));
+    int segments = 50;              // 底面円の分割数
+
+    // 先端（tip）は原点
+    geometry_msgs::Point tip;
+    tip.x = 0.1;
+    tip.y = 0.0;
+    tip.z = 0.0;
+
+    // 底面円上の各点を計算（x = length 平面上）
+    std::vector<geometry_msgs::Point> base_points;
+    for (int i = 0; i < segments; ++i)
+    {
+        double theta = 2 * M_PI * i / segments;
+        geometry_msgs::Point p;
+        p.x = length;
+        p.y = radius * cos(theta);
+        p.z = radius * sin(theta);
+        base_points.push_back(p);
+    }
+
+    // 円錐の側面（三角形リスト）を生成（表面）
+    for (int i = 0; i < segments; ++i)
+    {
+        int next = (i + 1) % segments;
+        marker.points.push_back(tip);
+        marker.points.push_back(base_points[i]);
+        marker.points.push_back(base_points[next]);
+    }
+    // 裏面も描画するため、頂点順序を反転した三角形を追加
+    for (int i = 0; i < segments; ++i)
+    {
+        int next = (i + 1) % segments;
+        marker.points.push_back(tip);
+        marker.points.push_back(base_points[next]);
+        marker.points.push_back(base_points[i]);
+    }
+
+    // 各頂点に個別の色を設定せず、マーカー全体の色を設定する（透過効果を正しく反映させるため）
+    marker.color = color;
+
+    shot_cone_pub_.publish(marker);
+}
+
+bool shotConeCallback(hardware_utils::RotateMotor::Request &req,
+                      hardware_utils::RotateMotor::Response &res)
+{
+    std_msgs::ColorRGBA g_cone_color;
+    g_cone_color.r = 1.0;
+    g_cone_color.g = 1.0;
+    g_cone_color.b = 0.0;
+    g_cone_color.a = 0.2;
+    pubShotCone(g_cone_color, req.duration);
+    res.success = true;
+    res.message = "Cone shot!";
+    return true;
+}
+
 int main (int argc, char** argv) 
 {        
     ros::init (argc, argv, "odom_generator");
@@ -329,11 +418,13 @@ int main (int argc, char** argv)
 	status_pub_ = nh.advertise<swarm_msgs::SystemStatus>("/hardware_bridge/system_status", 10);  
 	pict_state_pub_ = nh.advertise<jsk_rviz_plugins::PictogramArray>("/hardware_bridge/system_status_pict", 10);       
     debug_text_pub_ = nh.advertise<jsk_rviz_plugins::OverlayText>("/hardware_bridge/system_status_text", 10);
+    shot_cone_pub_ = nh.advertise<visualization_msgs::Marker>("/hardware_bridge/shot_cone", 1);
 	  
 	pict_state_timer_ = nh.createTimer(ros::Duration(1.0), pictStateTimerCallback);
 
 	_takeoff_server = nh.advertiseService("/mavros_bridge/takeoff", takeoffCallback);
     _activate_server = nh.advertiseService("/mavros_bridge/activate", activateCallback);
+    _shot_server = nh.advertiseService("/hardware_bridge/rotate_motor", shotConeCallback);
 
 	_cmd_sub  = nh.subscribe( "command", 1, rcvPosCmdCallBack );
 	_status_sub = nh.subscribe("/traj_server/system_status", 1, statusCallback);

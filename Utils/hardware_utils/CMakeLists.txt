@@ -42,7 +42,7 @@ generate_messages(
 
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES ${PROJECT_NAME}
+  # LIBRARIES ${PROJECT_NAME}
   # LIBRARIES sensor_visualization
   CATKIN_DEPENDS roscpp swarm_msgs quadrotor_msgs message_runtime roslib
   DEPENDS YAML_CPP

@@ -66,15 +66,19 @@ bool MavrosBridge::rotateMotorCallback(hardware_utils::RotateMotor::Request& req
         
         // Pythonスクリプトを実行
         int result = system(command.c_str());
+        std_msgs::ColorRGBA g_cone_color;
+        g_cone_color.a = 0.2;
         
         if (result == 0) {
             ROS_INFO("Motor rotation completed successfully");
             res.success = true;
-            pubShotCone(rviz_visual_tools::GREEN, req.duration);
+            g_cone_color.r = 1.0;
+            g_cone_color.g = 1.0;
+            g_cone_color.b = 0.0;
+            pubShotCone(g_cone_color, req.duration);
         } else {
             ROS_ERROR("Failed to rotate motor");
             res.success = false;
-            pubShotCone(rviz_visual_tools::RED, req.duration);
         }
         
         return true;
