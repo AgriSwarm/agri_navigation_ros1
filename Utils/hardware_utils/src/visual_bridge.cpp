@@ -358,5 +358,5 @@ void MavrosBridge::pubShotCone(rviz_visual_tools::colors cone_color, double dura
     }
 
     // マーカーの発行
-    marker_pub_.publish(marker);
+    shot_cone_pub_.publish(marker);
 }
