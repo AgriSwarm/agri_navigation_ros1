@@ -273,6 +273,6 @@ void MavrosBridge::pubShotCone(rviz_visual_tools::colors cone_color)
 
     double cone_angle = M_PI / 2;
     // 修正：直接 cone_color を渡す（第三引数は rviz_visual_tools::colors 型）
-    visual_tools_->publishCone(cone_pose, cone_angle, cone_color, 2);
+    visual_tools_->publishCone(cone_pose, cone_angle, cone_color, 1);
     visual_tools_->trigger();
 }
