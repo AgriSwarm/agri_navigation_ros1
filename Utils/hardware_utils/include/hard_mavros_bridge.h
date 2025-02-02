@@ -110,7 +110,7 @@ private:
     void publishCpuUsage(const std::string& file_path, ros::Publisher& publisher);
     void publishGpuUsage(const std::string& file_path, ros::Publisher& publisher);
     // void pubShotCone(rviz_visual_tools::Colors cone_color);
-    void pubShotCone(rviz_visual_tools::colors cone_color);
+    void pubShotCone(rviz_visual_tools::colors cone_color, double duration);
 
     hardware_utils::PIDConfig getPIDParam();
 
