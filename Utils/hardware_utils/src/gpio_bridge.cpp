@@ -70,9 +70,11 @@ bool MavrosBridge::rotateMotorCallback(hardware_utils::RotateMotor::Request& req
         if (result == 0) {
             ROS_INFO("Motor rotation completed successfully");
             res.success = true;
+            pubShotCone(rviz_visual_tools::GREEN);
         } else {
             ROS_ERROR("Failed to rotate motor");
             res.success = false;
+            pubShotCone(rviz_visual_tools::RED);
         }
         
         return true;

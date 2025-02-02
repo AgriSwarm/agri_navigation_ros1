@@ -259,3 +259,20 @@ void MavrosBridge::pubPictgramState(swarm_msgs::SystemStatus msg)
 
     pict_state_pub_.publish(pictogram_array);
 }
+
+void MavrosBridge::pubShotCone(rviz_visual_tools::colors cone_color)
+{
+    geometry_msgs::Pose cone_pose;
+    cone_pose.position.x = 0.0;
+    cone_pose.position.y = 0.0;
+    cone_pose.position.z = 0.0;
+    cone_pose.orientation.x = 0.0;
+    cone_pose.orientation.y = 0.0;
+    cone_pose.orientation.z = 0.0;
+    cone_pose.orientation.w = 1.0;
+
+    double cone_angle = M_PI / 2;
+    // 修正：直接 cone_color を渡す（第三引数は rviz_visual_tools::colors 型）
+    visual_tools_->publishCone(cone_pose, cone_angle, cone_color, 2);
+    visual_tools_->trigger();
+}
