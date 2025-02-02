@@ -361,7 +361,7 @@ void MavrosBridge::pubPictgramState(swarm_msgs::SystemStatus msg)
 //     shot_cone_pub_.publish(marker);
 // }
 
-void MavrosBridge::pubShotCone(rviz_visual_tools::colors cone_color, double duration)
+void MavrosBridge::pubShotCone(rviz_visual_tools::colors cone_color, double duration, double scale_factor, double alpha)
 {
     // マーカーの基本設定
     visualization_msgs::Marker marker;
@@ -373,12 +373,13 @@ void MavrosBridge::pubShotCone(rviz_visual_tools::colors cone_color, double dura
     marker.action = visualization_msgs::Marker::ADD;          // ADD (0)
     marker.lifetime = ros::Duration(duration);
 
-    // ★ 重要 ★ scale を明示的に設定（1,1,1 など、適当な倍率）
+    // TRIANGLE_LISTの場合、scaleフィールドは通常無視されるので
+    // 幾何学的な大きさは下記の座標計算で scale_factor を適用します。
     marker.scale.x = 1.0;
     marker.scale.y = 1.0;
     marker.scale.z = 1.0;
 
-    // マーカーのポーズ設定（原点、回転なし）
+    // マーカーのポーズ設定（原点・回転なし）
     marker.pose.position.x = 0.0;
     marker.pose.position.y = 0.0;
     marker.pose.position.z = 0.0;
@@ -388,13 +389,15 @@ void MavrosBridge::pubShotCone(rviz_visual_tools::colors cone_color, double dura
     marker.pose.orientation.w = 1.0;
 
     // 円錐のパラメータ設定
-    double length = 1.0;              // 円錐の高さ（先端から底面まで）
-    double coneAngle = 3 * M_PI / 2;    // 円錐の全広がり角 (270°) ※必要に応じて調整してください
+    // ここでは「length」は円錐の高さ（先端から底面まで）としており、scale_factor を掛けています
+    double length = 1.0 * scale_factor;  
+    // 円錐の全広がり角（ここでは270° = 3π/2） ※必要に応じて調整してください
+    double coneAngle = 3 * M_PI / 2;    
     double halfAngle = coneAngle / 2.0;
-    // 負の値にならないように絶対値を使用
+    // tan(halfAngle) は角度により負になる可能性があるため fabs() で正値を得る
     double radius = length * fabs(tan(halfAngle));
 
-    int segments = 50;                // 底面円の分割数
+    int segments = 50;  // 底面円の近似に用いる分割数
 
     // 円錐の先端（tip）は原点
     geometry_msgs::Point tip;
@@ -402,7 +405,7 @@ void MavrosBridge::pubShotCone(rviz_visual_tools::colors cone_color, double dura
     tip.y = 0.0;
     tip.z = 0.0;
 
-    // 底面円上の各点を計算（平面 x = length 上）
+    // 底面円上の各点を計算（底面は x = length の平面上）
     std::vector<geometry_msgs::Point> base_points;
     for (int i = 0; i < segments; ++i)
     {
@@ -423,7 +426,6 @@ void MavrosBridge::pubShotCone(rviz_visual_tools::colors cone_color, double dura
         marker.points.push_back(base_points[i]);
         marker.points.push_back(base_points[next]);
     }
-
     // 裏面も描画するため、各三角形の頂点順序を反転させた三角形を追加
     for (int i = 0; i < segments; ++i)
     {
@@ -433,9 +435,11 @@ void MavrosBridge::pubShotCone(rviz_visual_tools::colors cone_color, double dura
         marker.points.push_back(base_points[i]);
     }
 
-    // 色設定：rviz_visual_tools の getColor() 関数で指定色を変換
+    // 色設定：visual_tools_ の getColor() 関数で指定色を変換し、alphaを上書き
     std_msgs::ColorRGBA color = visual_tools_->getColor(cone_color);
-    // 各頂点に同じ色を設定
+    color.a = alpha;  // 指定された alpha 値を反映
+
+    // 各頂点に同じ色を適用
     size_t num_vertices = marker.points.size();
     for (size_t i = 0; i < num_vertices; ++i)
     {
