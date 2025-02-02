@@ -55,6 +55,7 @@
   <build_depend>swarm_msgs</build_depend>
   <build_depend>mavros_msgs</build_depend>
   <build_depend>tf</build_depend>
+  <build_depend>hardware_utils</build_depend>
   <build_export_depend>roscpp</build_export_depend>
   <build_export_depend>nav_msgs</build_export_depend>
   <build_export_depend>quadrotor_msgs</build_export_depend>
@@ -67,6 +68,7 @@
   <exec_depend>swarm_msgs</exec_depend>
   <exec_depend>mavros_msgs</exec_depend>
   <exec_depend>tf</exec_depend>
+  <exec_depend>hardware_utils</exec_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

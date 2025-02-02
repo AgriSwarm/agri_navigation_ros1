@@ -15,8 +15,11 @@ find_package(catkin REQUIRED COMPONENTS
   swarm_msgs
   mavros_msgs
   tf
+  hardware_utils
 )
+
 find_package(Eigen3 REQUIRED)
+find_package(rviz_visual_tools REQUIRED)
 
 catkin_package()
 
@@ -24,8 +27,13 @@ include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
+  ${rviz_visual_tools_INCLUDE_DIRS}
 )
 
 add_executable (poscmd_2_odom src/poscmd_2_odom.cpp )
 target_link_libraries(poscmd_2_odom
-  ${catkin_LIBRARIES})
+  ${catkin_LIBRARIES}
+  ${EIGEN3_LIBRARIES}
+  ${rviz_visual_tools_LIBRARIES}
+  )
+

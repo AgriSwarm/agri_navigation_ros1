@@ -260,28 +260,8 @@ void MavrosBridge::pubPictgramState(swarm_msgs::SystemStatus msg)
     pict_state_pub_.publish(pictogram_array);
 }
 
-// void MavrosBridge::pubShotCone(rviz_visual_tools::colors cone_color, double duration)
-// {
-//     geometry_msgs::Pose cone_pose;
-//     cone_pose.position.x = 0.0;
-//     cone_pose.position.y = 0.0;
-//     cone_pose.position.z = 0.0;
-//     cone_pose.orientation.x = 0.0;
-//     cone_pose.orientation.y = 0.0;
-//     cone_pose.orientation.z = 0.0;
-//     cone_pose.orientation.w = 1.0;
-
-//     double cone_angle = 3* M_PI / 2;
-//     // 修正：直接 cone_color を渡す（第三引数は rviz_visual_tools::colors 型）
-//     visual_tools_->setLifetime(duration);
-//     visual_tools_->publishCone(cone_pose, cone_angle, cone_color, 1);
-//     visual_tools_->trigger();
-// }
-
-
-void MavrosBridge::pubShotCone(rviz_visual_tools::colors cone_color, double duration)
+void MavrosBridge::pubShotCone(const std_msgs::ColorRGBA &color, double duration)
 {
-    // マーカーの基本設定
     visualization_msgs::Marker marker;
     marker.header.frame_id = "base_link";
     marker.header.stamp = ros::Time::now();
@@ -290,8 +270,12 @@ void MavrosBridge::pubShotCone(rviz_visual_tools::colors cone_color, double dura
     marker.type = visualization_msgs::Marker::TRIANGLE_LIST;
     marker.action = visualization_msgs::Marker::ADD;
     marker.lifetime = ros::Duration(duration);
+    // marker.lifetime = ros::Duration(0.0);  // 一度だけ表示
 
-    // マーカーのポーズ設定（原点・回転なし）
+    marker.scale.x = 1.0;
+    marker.scale.y = 1.0;
+    marker.scale.z = 1.0;
+
     marker.pose.position.x = 0.0;
     marker.pose.position.y = 0.0;
     marker.pose.position.z = 0.0;
@@ -301,21 +285,19 @@ void MavrosBridge::pubShotCone(rviz_visual_tools::colors cone_color, double dura
     marker.pose.orientation.w = 1.0;
 
     // 円錐のパラメータ設定
-    double length = 1.0;              // 円錐の長さ（tipから底面まで）
-    double coneAngle = 3 * M_PI / 2;    // 円錐の全広がり角（ここでは270°）
-    int segments = 50;                // 底面円の近似に用いる分割数
-
-    // 円錐の半角（円錐の底面半径計算用）
+    double length = 0.5;            // 円錐の高さ
+    double coneAngle = 0.4* M_PI / 2;  // 全広がり角 (270°)
     double halfAngle = coneAngle / 2.0;
-    double radius = length * tan(halfAngle);
+    double radius = length * fabs(tan(halfAngle));
+    int segments = 50;              // 底面円の分割数
 
-    // 円錐の先端（tip）は原点
+    // 先端（tip）は原点
     geometry_msgs::Point tip;
-    tip.x = 0.0;
+    tip.x = 0.1;
     tip.y = 0.0;
     tip.z = 0.0;
 
-    // 底面円上の点を計算（平面 x = length 上）
+    // 底面円上の各点を計算（x = length 平面上）
     std::vector<geometry_msgs::Point> base_points;
     for (int i = 0; i < segments; ++i)
     {
@@ -327,18 +309,15 @@ void MavrosBridge::pubShotCone(rviz_visual_tools::colors cone_color, double dura
         base_points.push_back(p);
     }
 
-    // 円錐の側面（三角形リスト）の生成
-    // 各三角形は、先端（tip）と底面円上の連続する2点で構成
+    // 円錐の側面（三角形リスト）を生成（表面）
     for (int i = 0; i < segments; ++i)
     {
         int next = (i + 1) % segments;
-        // 表面用の三角形
         marker.points.push_back(tip);
         marker.points.push_back(base_points[i]);
         marker.points.push_back(base_points[next]);
     }
-
-    // 裏面も描画するため、各三角形の頂点順序を反転した三角形を追加
+    // 裏面も描画するため、頂点順序を反転した三角形を追加
     for (int i = 0; i < segments; ++i)
     {
         int next = (i + 1) % segments;
@@ -347,109 +326,8 @@ void MavrosBridge::pubShotCone(rviz_visual_tools::colors cone_color, double dura
         marker.points.push_back(base_points[i]);
     }
 
-    // 色設定
-    // visual_tools_ 内の getColor() 関数を利用して std_msgs::ColorRGBA に変換
-    std_msgs::ColorRGBA color = visual_tools_->getColor(cone_color);
-    color.a = 0.5;  // 透明度を上書き
-    // 各頂点に同じ色を適用
-    size_t num_vertices = marker.points.size();
-    for (size_t i = 0; i < num_vertices; ++i)
-    {
-        marker.colors.push_back(color);
-    }
+    // 各頂点に個別の色を設定せず、マーカー全体の色を設定する（透過効果を正しく反映させるため）
+    marker.color = color;
 
-    // マーカーの発行
     shot_cone_pub_.publish(marker);
 }
-
-// void MavrosBridge::pubShotCone(rviz_visual_tools::colors cone_color, double duration)
-// {
-//     double scale_factor = 0.2;  // 円錐のスケールファクター
-//     double alpha = 0.5;         // マーカーの透明度
-
-//     // マーカーの基本設定
-//     visualization_msgs::Marker marker;
-//     marker.header.frame_id = "base_link";
-//     marker.header.stamp = ros::Time::now();
-//     marker.ns = "shot_cone";
-//     marker.id = 0;
-//     marker.type = visualization_msgs::Marker::TRIANGLE_LIST;  // 型は TRIANGLE_LIST (11)
-//     marker.action = visualization_msgs::Marker::ADD;          // ADD (0)
-//     marker.lifetime = ros::Duration(duration);
-
-//     // TRIANGLE_LISTの場合、scaleフィールドは通常無視されるので
-//     // 幾何学的な大きさは下記の座標計算で scale_factor を適用します。
-//     marker.scale.x = 1.0;
-//     marker.scale.y = 1.0;
-//     marker.scale.z = 1.0;
-
-//     // マーカーのポーズ設定（原点・回転なし）
-//     marker.pose.position.x = 0.0;
-//     marker.pose.position.y = 0.0;
-//     marker.pose.position.z = 0.0;
-//     marker.pose.orientation.x = 0.0;
-//     marker.pose.orientation.y = 0.0;
-//     marker.pose.orientation.z = 0.0;
-//     marker.pose.orientation.w = 1.0;
-
-//     // 円錐のパラメータ設定
-//     // ここでは「length」は円錐の高さ（先端から底面まで）としており、scale_factor を掛けています
-//     double length = 1.0 * scale_factor;  
-//     // 円錐の全広がり角（ここでは270° = 3π/2） ※必要に応じて調整してください
-//     double coneAngle = 3 * M_PI / 2;    
-//     double halfAngle = coneAngle / 2.0;
-//     // tan(halfAngle) は角度により負になる可能性があるため fabs() で正値を得る
-//     double radius = length * fabs(tan(halfAngle));
-
-//     int segments = 50;  // 底面円の近似に用いる分割数
-
-//     // 円錐の先端（tip）は原点
-//     geometry_msgs::Point tip;
-//     tip.x = 0.0;
-//     tip.y = 0.0;
-//     tip.z = 0.0;
-
-//     // 底面円上の各点を計算（底面は x = length の平面上）
-//     std::vector<geometry_msgs::Point> base_points;
-//     for (int i = 0; i < segments; ++i)
-//     {
-//         double theta = 2 * M_PI * i / segments;
-//         geometry_msgs::Point p;
-//         p.x = length;
-//         p.y = radius * cos(theta);
-//         p.z = radius * sin(theta);
-//         base_points.push_back(p);
-//     }
-
-//     // 円錐の側面（三角形リスト）を生成
-//     // 表面用の三角形（先端 + 底面上の連続する2点）
-//     for (int i = 0; i < segments; ++i)
-//     {
-//         int next = (i + 1) % segments;
-//         marker.points.push_back(tip);
-//         marker.points.push_back(base_points[i]);
-//         marker.points.push_back(base_points[next]);
-//     }
-//     // 裏面も描画するため、各三角形の頂点順序を反転させた三角形を追加
-//     for (int i = 0; i < segments; ++i)
-//     {
-//         int next = (i + 1) % segments;
-//         marker.points.push_back(tip);
-//         marker.points.push_back(base_points[next]);
-//         marker.points.push_back(base_points[i]);
-//     }
-
-//     // 色設定：visual_tools_ の getColor() 関数で指定色を変換し、alphaを上書き
-//     std_msgs::ColorRGBA color = visual_tools_->getColor(cone_color);
-//     color.a = alpha;  // 指定された alpha 値を反映
-
-//     // 各頂点に同じ色を適用
-//     size_t num_vertices = marker.points.size();
-//     for (size_t i = 0; i < num_vertices; ++i)
-//     {
-//         marker.colors.push_back(color);
-//     }
-
-//     // マーカーの発行
-//     shot_cone_pub_.publish(marker);
-// }
