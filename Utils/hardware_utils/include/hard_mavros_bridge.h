@@ -144,6 +144,7 @@ private:
     ros::Publisher pub_temp1_;
     ros::Publisher pub_cpu_usage_;
     ros::Publisher pub_gpu_usage_;
+    ros::Publisher shot_cone_pub_;
     ros::Timer thermal_timer_, vio_align_timer_, pict_state_timer_;
 
     ros::Publisher set_gp_origin_pub_, odom_pub_, setpoint_pos_pub_, setpoint_raw_pub_, pict_state_pub_, debug_text_pub_;
