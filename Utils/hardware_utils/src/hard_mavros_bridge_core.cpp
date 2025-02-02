@@ -33,6 +33,7 @@ MavrosBridge::MavrosBridge() : nh_(), pnh_("~"), server_(config_mutex_)
     // visual_tools_ = new rviz_visual_tools::RvizVisualTools("base_link", "rviz_cone_marker");
     visual_tools_ = new rviz_visual_tools::RvizVisualTools("base_link", "rviz_cone_marker", nh_);
     visual_tools_->loadMarkerPub();
+    visual_tools_->setAlpha(0.1);
 
     mode_client_ = nh_.serviceClient<mavros_msgs::SetMode>("/mavros/set_mode");
     arm_client_ = nh_.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/arming");
