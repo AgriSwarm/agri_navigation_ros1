@@ -72,6 +72,7 @@ class TrajServer
         ros::Publisher cf_full_state_cmd_pub_, cf_position_cmd_pub_, goal_pub_,target_marker_pub_, setpoint_raw_pub, setpoint_pos_pub, twist_pub;
         ros::ServiceServer update_mode_srv_;
         ros::Timer cmd_timer_;
+        ros::Timer status_timer_;
         DroneState tracking_state_, last_cmd_state_, odom_state_, escape_cmd_state_;
         boost::shared_ptr<poly_traj::Trajectory> traj_;
         double traj_duration_;
@@ -101,6 +102,7 @@ class TrajServer
         void conservativeEscapeCallback(const quadrotor_msgs::GoalSet::ConstPtr &msg);
 
         void cmdTimerCallback(const ros::TimerEvent &event);
+        void statusTimerCallback(const ros::TimerEvent &event);
         void statusCallback(const swarm_msgs::SystemStatus::ConstPtr &msg);
         void emergencyStopCallback(const std_msgs::Empty &msg);
 

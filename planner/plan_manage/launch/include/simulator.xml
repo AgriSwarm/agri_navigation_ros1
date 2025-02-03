@@ -46,11 +46,11 @@
         <param name="init_y" value="$(arg init_y_)"/>
         <param name="init_z" value="$(arg init_z_)"/>
         <remap from="~command" to="drone_$(arg drone_id)_planning/pos_cmd"/>
-        <remap from="~odometry" to="/d2vins/odometry"/>
+        <remap from="~odometry_1" to="drone_$(arg drone_id)_$(arg odometry_topic)"/>
     </node>
 
     <node pkg="odom_visualization" name="drone_$(arg drone_id)_odom_visualization" type="odom_visualization" output="screen">
-        <remap from="~odom" to="/d2vins/odometry"/>
+        <remap from="~odom" to="drone_$(arg drone_id)_$(arg odometry_topic)"/>
         <!-- <remap from="~odom" to="/cf231/odom"/> -->
         <param name="color/a" value="1.0"/>
         <param name="color/r" value="0.0"/>
@@ -70,7 +70,7 @@
         <param name="map/y_size" value="$(arg map_size_y_)"/>
         <param name="map/z_size" value="$(arg map_size_z_)"/>
         <remap from="~global_map" to="/map_generator/global_cloud"/>
-        <remap from="~odometry" to="/d2vins/odometry"/>
+        <remap from="~odometry" to="drone_$(arg drone_id)_$(arg odometry_topic)"/>
         <remap from="~pcl_render_node/cloud" to="/drone_$(arg drone_id)_pcl_render_node/cloud"/>
     </node>
 </launch>

@@ -262,6 +262,12 @@ void TrajServer::targetPoseCallback(const quadrotor_msgs::TrackingPose::ConstPtr
     }
 }
 
+void TrajServer::statusTimerCallback(const ros::TimerEvent &event)
+{
+    status_cur_.nav_status = modeToString(mode_);
+    status_pub_.publish(status_cur_);
+}
+
 void TrajServer::cmdTimerCallback(const ros::TimerEvent &event)
 {
     if(mode_ == NavigationMode::IDLE)
