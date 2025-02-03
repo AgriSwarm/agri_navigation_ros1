@@ -613,9 +613,7 @@ namespace ego_planner
           // return false;
           continue;
         }
-
         i = j + 1;
-
         segment_ids.push_back(std::pair<int, int>(in_id, out_id));
       }
     }
