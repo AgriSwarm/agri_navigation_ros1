@@ -50,6 +50,7 @@ TrajServer::TrajServer(ros::NodeHandle &nh) : nh_(nh)
     odom_sub_ = nh_.subscribe("planning/odom", 1, &TrajServer::odomCallback, this);
 
     cmd_timer_ = nh_.createTimer(ros::Duration(0.01), &TrajServer::cmdTimerCallback, this);
+    status_timer_ = nh_.createTimer(ros::Duration(1.0), &TrajServer::statusTimerCallback, this);
 }
 }  // namespace ego_planner
 

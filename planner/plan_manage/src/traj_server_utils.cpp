@@ -61,8 +61,6 @@ void TrajServer::updateMode(NavigationMode mode)
     }
     ROS_INFO("[traj_server] Mode changed from %s to %s", modeToString(mode_).c_str(), modeToString(mode).c_str());
     mode_ = mode;
-    status_cur_.nav_status = modeToString(mode_);
-    status_pub_.publish(status_cur_);
 }
 
 DroneState TrajServer::computeTrackingState(const quadrotor_msgs::TrackingPose::ConstPtr &msg)

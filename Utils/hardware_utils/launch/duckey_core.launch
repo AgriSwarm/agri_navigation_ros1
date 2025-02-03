@@ -167,6 +167,7 @@
         <param name="drone_id" value="$(arg self_id)" type="int"/>
         <param name="vio_align_interval" value="1000000.0" />
         <param name="debug_mode" value="false" />
+        <param name="virtual_mode" value="false" />
     </node>
 
     <!-- <node pkg="rosbag" type="record" name="rosbag_flight_record"
