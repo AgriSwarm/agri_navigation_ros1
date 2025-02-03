@@ -608,8 +608,10 @@ namespace ego_planner
         {
           ROS_WARN("Local target in collision, skip this planning.");
 
-          force_stop_type_ = STOP_FOR_ERROR;
-          return false;
+          // TODO: 未検証
+          // force_stop_type_ = STOP_FOR_ERROR;
+          // return false;
+          continue;
         }
 
         i = j + 1;
