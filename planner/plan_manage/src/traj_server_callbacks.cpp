@@ -206,9 +206,11 @@ void TrajServer::setpointPosCallback(const swarm_msgs::PositionCommand::ConstPtr
 void TrajServer::targetPoseCallback(const quadrotor_msgs::TrackingPose::ConstPtr &msg)
 {
     // ROS_INFO("[traj_server] targetPoseCallback");
-    if (msg->drone_id != drone_id_ || mode_ == NavigationMode::ESCAPE || mode_ == NavigationMode::TURN_FOR_ESCAPE)
+    if (msg->drone_id != drone_id_ || 
+        mode_ == NavigationMode::ESCAPE || 
+        mode_ == NavigationMode::TURN_FOR_ESCAPE ||
+        mode_ == NavigationMode::IDLE)
     {
-        // ROS_INFO("[traj_server] drone_id: %d, msg->drone_id: %d, escape_mode_: %d", drone_id_, msg->drone_id, escape_mode_);
         return;
     }
     if(msg->target_status == quadrotor_msgs::TrackingPose::TARGET_STATUS_APPROXIMATE)
