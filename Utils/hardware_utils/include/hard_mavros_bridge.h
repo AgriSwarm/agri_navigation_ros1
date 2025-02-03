@@ -173,6 +173,7 @@ private:
     bool ap_connected_{ false };
     bool init_mavparams_{ false };
     bool debug_mode_{ false };
+    bool virtual_mode_{ false };
     int cells_batt_{ 0 };
     int imu_freq_{ 0 };
     int infra_freq_{ 0 };
