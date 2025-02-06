@@ -38,7 +38,8 @@ class DemoManager:
         # パラメータ設定
         self.dummy_flower_trigger_radius = 1.0
         self.route_track_trigger_radius = 1.0
-        self.dummy_target_rel_position = [2.0, 0.0, 1.0]
+        self.std_height = 1.2
+        self.dummy_target_rel_position = [2.0, 0.0, self.std_height]
         euler = [0.0, 0.0, -2.0]
         self.dummy_target_rel_orientation = R.from_euler('xyz', euler).as_quat()
         self.tracking_distance = 0.5
@@ -115,7 +116,7 @@ class DemoManager:
         self.mand_start_pub.publish(Empty())
         msg = GoalSet()
         msg.drone_id = self.drone_id
-        msg.goal = [self.init_pos.x, self.init_pos.y, self.init_pos.z+1.0]
+        msg.goal = [self.init_pos.x, self.init_pos.y, self.init_pos.z+self.std_height]
         self.escape_pub.publish(msg)
 
     def publish_markers(self):
@@ -159,7 +160,7 @@ class DemoManager:
         structure_polygon.polygon = Polygon()
         structure_polygon.polygon.points = [
             Point32(x=self.init_pos.x, y=self.init_pos.y, z=self.init_pos.z),
-            Point32(x=self.init_pos.x, y=self.init_pos.y, z=self.init_pos.z+1.0),
+            Point32(x=self.init_pos.x, y=self.init_pos.y, z=self.init_pos.z+self.std_height),
             Point32(x=self.dummy_target_pose.position.x, y=self.dummy_target_pose.position.y, z=self.dummy_target_pose.position.z),
         ]
 
@@ -330,7 +331,10 @@ class MavrosBridgeClient:
         world_offset = rot_mat.dot(local_offset)
 
         # ターゲット位置の更新
-        self.position_target += world_offset
+        # print("position_target: ", self.position_target)
+        # print("local_offset: ", local_offset)
+        self.position_target += local_offset
+        # print("position_target: ", self.position_target)
         # ---------------------------
         # 現在のヨー角に dyaw を足して新しい姿勢を作る
         # ---------------------------
@@ -570,7 +574,7 @@ class MavrosBridgeClient:
         
         try:
             takeoff_cl = rospy.ServiceProxy(service_name, CommandTOLSrv)
-            response = takeoff_cl(altitude=1.0, latitude=0, longitude=0, min_pitch=0, yaw=0)
+            response = takeoff_cl(altitude=1.2, latitude=0, longitude=0, min_pitch=0, yaw=0)
             rospy.loginfo(response)
             return True
         except rospy.ServiceException as e:
@@ -648,7 +652,7 @@ class MavrosBridgeClient:
             char = self.getch()
             
             if not self.use_lcm:
-                self.init_pose_pid = False
+                # self.init_pose_pid = False
                 if char == 'a':
                     result = self.call_activate_service(True)
                     self.print_status("activated", result)
@@ -693,9 +697,9 @@ class MavrosBridgeClient:
                 self.mode = 'setpoint_position'
                 print("Switched to setpoint position mode")
             elif char == '\x1b[5~':  # Page Up
-                self.publish_setpoint(dyaw=0.1)
+                self.publish_setpoint(dyaw=0.5)
             elif char == '\x1b[6~':  # Page Down
-                self.publish_setpoint(dyaw=-0.1)
+                self.publish_setpoint(dyaw=-0.5)
             elif char.startswith('\x1b['):
                 if char == '\x1b[A':  # Up arrow
                     self.publish_setpoint(dx=0.1)
